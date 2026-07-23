@@ -61,3 +61,6 @@ app.get('/conges/debug/all', async (req, res) => {
 })
 
 app.listen(3003, () => console.log('Congés service running on :3003'))
+
+// Rayan — TEST en cours, ne pas merger
+// app.get('/conges/test-endpoint', (req, res) => res.json({ test: true }))
