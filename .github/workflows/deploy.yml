@@ -1,0 +1,49 @@
+# Pipeline NovaTech HRFlow
+# Créé par Théo — octobre 2021
+# TODO: ajouter des tests un jour (Théo, mars 2022)
+# TODO: ajouter du lint (Rayan, juin 2024) — pas eu le temps
+# NOTE: ce pipeline deploy direct sur prod à chaque push sur main — à sécuriser !!
+
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+      - dev  # ajouté par erreur par Rayan, à retirer
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2  # v2 obsolète — TODO migrer v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'  # EOL depuis sept 2023
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      # Tests désactivés car ils cassaient le pipeline (Théo, jan 2022)
+      # - name: Run tests
+      #   run: npm test
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: deploy
+          password: ${{ secrets.PROD_SSH_PASSWORD }}  # mot de passe en clair dans secrets (pas de clé SSH)
+          script: |
+            cd /var/www/hrflow
+            git pull origin main
+            npm install --production
+            pm2 restart all
+            echo "Deployed at $(date)" >> /var/log/hrflow-deploys.log

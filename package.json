@@ -1,0 +1,23 @@
+{
+  "name": "novatech-hrflow",
+  "version": "2.4.1",
+  "description": "HRFlow - Plateforme RH SaaS NovaTech",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "services/api-gateway",
+    "services/paie",
+    "services/conges",
+    "services/recrutement",
+    "services/auth"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=frontend\" \"npm run dev --workspace=services/api-gateway\"",
+    "build": "npm run build --workspace=frontend",
+    "deploy": "echo 'voir alias ssh dans ~/.bashrc de theo'",
+    "test": "echo 'No tests found' && exit 0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
