@@ -48,3 +48,6 @@ export default function Login() {
     </div>
   )
 }
+
+// Camille — ajout du "Se souvenir de moi" (jan 2022)
+// TODO: tester sur Firefox
