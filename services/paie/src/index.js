@@ -77,7 +77,3 @@ app.post('/paie/migrate', async (req, res) => {
 })
 
 app.listen(3002, () => console.log('Paie service running on :3002'))
-
-// Rayan — tentative de fix du calcul des heures sup (avril 2024)
-// ANNULÉ : a cassé la prod, revert en urgence par Théo
-// TODO: refaire proprement
