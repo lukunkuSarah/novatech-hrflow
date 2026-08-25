@@ -1,0 +1,21 @@
+# =============================================================================
+# Normalisation des fins de ligne
+#
+# Sans cette règle, un poste Windows commite des fins de ligne CRLF et les
+# vérifications de formatage échouent sur les exécuteurs Linux du pipeline —
+# pour une raison qui n'a rien à voir avec le code.
+#
+# Le dépôt stocke du LF ; chaque poste de travail garde sa convention locale.
+# =============================================================================
+
+* text=auto eol=lf
+
+# Fichiers binaires : aucune conversion.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.woff2 binary
+
+# Scripts shell : LF obligatoire, y compris sur Windows — un script en CRLF
+# échoue à l'exécution sur un serveur Linux.
+*.sh text eol=lf
