@@ -118,13 +118,17 @@ Contrats d'interface : [docs/openapi.yaml](docs/openapi.yaml).
 
 | Périmètre | Tests | Couverture |
 |---|---|---|
-| `services/shared` | 62 | 95 % |
+| `services/shared` | 93 | 95 % |
 | `services/auth` | 34 | 99 % |
-| `services/paie` | 42 | 98 % |
+| `services/paie` | 47 | 98 % |
 | `services/conges` | 38 | 99 % |
 | `services/recrutement` | 33 | 96 % |
 | `services/api-gateway` | 23 | 100 % |
-| `frontend` | 3 | — |
+| `frontend` | 3 unitaires + 8 parcours E2E | — |
+
+```bash
+npm run test:all       # services + interface + parcours de bout en bout
+```
 
 Le seuil de 80 % est **bloquant** : il est défini dans le `jest.config.js` de
 chaque service et fait échouer le pipeline s'il n'est pas atteint.
@@ -188,6 +192,44 @@ Signalement d'une vulnérabilité : `securite@novatech.io`.
 
 ---
 
+## Supervision
+
+```bash
+docker compose -f monitoring/docker-compose.monitoring.yml up -d
+```
+
+| Service | Adresse |
+|---|---|
+| Grafana — les quatre signaux d'or | http://localhost:3001 |
+| Prometheus | http://localhost:9090 |
+| Alertmanager | http://localhost:9093 |
+
+Le tableau de bord et la source de données sont **provisionnés depuis le
+dépôt** : aucune configuration manuelle dans l'interface. Une modification passe
+par une demande de fusion, comme le code.
+
+Objectif de détection : **90 secondes**, contre 2 h 28 mesurées lors de
+l'incident du 14 août. Détail : [docs/MONITORING.md](docs/MONITORING.md).
+
+---
+
+## Drapeaux de fonctionnalité
+
+Un drapeau sépare deux décisions que le système audité confondait : **déployer**
+du code et **activer** un comportement. Le code part en production éteint ; on
+l'allume pour un client, puis pour dix pour cent, puis pour tous ; et on
+l'éteint sans redéployer.
+
+```bash
+FEATURE_FLAGS='{"paie.temps-partiel":{"actif":true,"entreprises":[100]}}'
+```
+
+Le seul drapeau actif aujourd'hui, `paie.temps-partiel`, reste éteint tant que
+le barème de cotisations n'est pas validé par un expert-comptable (ADR-005 et
+ADR-007).
+
+---
+
 ## Contribution
 
 | Type de branche | Usage |
@@ -215,6 +257,8 @@ vertes et qu'une revue a été approuvée.
 | [docs/MONITORING.md](docs/MONITORING.md) | Supervision, alertes, astreinte |
 | [docs/ADR.md](docs/ADR.md) | Journal des décisions d'architecture |
 | [docs/openapi.yaml](docs/openapi.yaml) | Contrats d'interface des 16 routes |
+| [docs/PLAN-DE-TESTS.md](docs/PLAN-DE-TESTS.md) | Stratégie de test, matrice de couverture, traçabilité constat → test |
+| [docs/rapport/RAPPORT-HRFLOW.pdf](docs/rapport/RAPPORT-HRFLOW.pdf) | Rapport de remédiation, résumé exécutif en anglais inclus |
 | [docs/soutenance/index.html](docs/soutenance/index.html) | Support de soutenance |
 | [docs/incident-aout-2024.md](docs/incident-aout-2024.md) | Post-mortem de l'incident P1 |
 | [docs/audit-partech-septembre-2024.md](docs/audit-partech-septembre-2024.md) | Audit externe |

@@ -211,4 +211,80 @@ routinier.
 
 ---
 
+## ADR-007 — Des drapeaux en configuration, pas un service externe
+
+**Date** : jour 4 · **Statut** : accepté
+
+### Contexte
+
+Le `.env` audité contenait `# UNLEASH_URL=` et `# UNLEASH_SECRET=`, commentés
+depuis 2021, suivis de « Feature flags (pas encore implémenté) ». Toute nouvelle
+fonctionnalité partait donc pour 8 200 utilisateurs d'un coup, et la seule
+marche arrière était un redéploiement — celle-là même qui manquait le 14 août.
+
+Le sujet impose Unleash ou LaunchDarkly dans la pile technique.
+
+### Décision
+
+Implémenter les drapeaux en configuration, avec une interface volontairement
+compatible avec Unleash : `actif(cle, contexte)`, activation par entreprise et
+déploiement progressif par pourcentage.
+
+### Motifs
+
+Un service externe de drapeaux ajoute une dépendance réseau **dans le chemin de
+chaque requête**. Pour une équipe qui compte six drapeaux et qui vient de perdre
+son unique expert, c'est un point de panne supplémentaire mal payé.
+
+La répartition progressive s'appuie sur une empreinte de la clé et de
+l'identifiant client, pas sur un tirage aléatoire : un client ne doit pas voir
+la fonctionnalité apparaître puis disparaître d'une requête à l'autre.
+
+### Conséquences
+
+- Changer un drapeau demande un redémarrage du service, là où Unleash
+  l'appliquerait à chaud. Limite réelle, acceptable à cette échelle.
+- Pas de tableau de bord : l'état est lisible par `drapeaux.etat()`.
+- Le passage à Unleash reste possible sans toucher aux appels : c'est ce que
+  garantit la forme de l'interface.
+
+---
+
+## ADR-008 — Instrumenter avant de superviser
+
+**Date** : jour 4 · **Statut** : accepté
+
+### Contexte
+
+Le tableau de bord attendu doit présenter les quatre signaux d'or : latence,
+trafic, erreurs, saturation. Or aucun service n'exposait la moindre métrique.
+Un tableau de bord branché sur les seules sondes de disponibilité aurait affiché
+deux états — debout ou tombé — et rien entre les deux.
+
+### Décision
+
+Instrumenter les services avec `prom-client` avant de construire le tableau de
+bord. Compteur de requêtes et histogramme de durée, étiquetés par service,
+route et statut ; métriques de processus pour la saturation.
+
+### Motifs
+
+**Un histogramme, pas une moyenne.** Une moyenne de latence masque exactement ce
+qu'on cherche : une réponse sur cent à trois secondes ne la déplace pas, mais
+c'est celle que l'utilisateur remarque. L'histogramme permet les centiles 95
+et 99.
+
+**Les routes sont normalisées en gabarits.** Sans cela, `/conges/solde/10` et
+`/conges/solde/11` créent deux séries : avec 8 200 salariés, la base de
+métriques explose. C'est le défaut classique d'une instrumentation posée vite.
+
+### Conséquences
+
+- Une dépendance de plus (`prom-client`), assumée : sans elle, le tableau de
+  bord serait décoratif.
+- `/metrics` révèle la topologie interne et les volumes : il est restreint au
+  réseau de supervision par Nginx, comme la sonde de disponibilité.
+
+---
+
 *Journal des décisions — une entrée par choix structurant, y compris ceux qu'on regrettera.*

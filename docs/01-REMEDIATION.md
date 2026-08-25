@@ -134,6 +134,31 @@ première action de la mise en œuvre réelle, pas une tâche de développement.
 
 ---
 
+## Livrables ajoutés après lecture de la grille d'évaluation
+
+La grille du bloc BC03 exige des livrables que les documents du dépôt ne
+mentionnaient pas. Ils ont été produits dans un second temps.
+
+| Livrable | État | Emplacement |
+|---|---|---|
+| Plan de tests rédigé | ✅ | `docs/PLAN-DE-TESTS.md` — stratégie, matrice, traçabilité constat → test |
+| Parcours de bout en bout | ✅ | `frontend/e2e/` — 5 parcours, 8 scénarios, Chromium |
+| Tableau de bord — quatre signaux d'or | ✅ | `monitoring/grafana/dashboards/` — 14 panneaux, provisionné |
+| Métriques applicatives | ✅ | `services/shared/src/metriques.js` — 13 tests |
+| Routage des alertes | ✅ | `monitoring/alertmanager.yml` — P1 vers l'astreinte, inhibitions |
+| Drapeaux de fonctionnalité | ✅ | `services/shared/src/drapeaux.js` — 18 tests, usage réel sur la paie |
+| Rapport de remédiation | ✅ | `docs/rapport/RAPPORT-HRFLOW.pdf` — généré par `npm run rapport` |
+| Résumé exécutif en anglais | ✅ | dans le rapport |
+| Infrastructure cloud provisionnée | ⬜ | exige un compte et un budget — hors de portée de l'équipe |
+
+### Ce que l'instrumentation a changé
+
+Sans métriques applicatives, un tableau de bord n'aurait affiché que deux états :
+debout ou tombé. Les quatre signaux d'or exigeaient d'instrumenter d'abord — le
+constat est consigné en ADR-008.
+
+---
+
 ## Ce qui reste, et pourquoi
 
 | Sujet | Nature | Décideur |
@@ -142,6 +167,8 @@ première action de la mise en œuvre réelle, pas une tâche de développement.
 | Validation du barème de cotisations | comptable et juridique | expert-comptable |
 | Sort des bulletins déjà émis avec un calcul erroné | juridique | direction générale |
 | Protection de branche, relecteurs obligatoires | configuration GitHub | administrateur du dépôt |
+| Infrastructure cloud (AWS ECS) | exige un compte et un budget | direction technique |
+| Analyse dynamique (OWASP ZAP) | exige un environnement déployé | après ouverture du staging |
 | Certificats TLS et empreintes d'hôtes | opérationnel | administrateur système |
 
 Ces points ne sont pas des oublis : ce sont des décisions qui n'appartiennent pas
