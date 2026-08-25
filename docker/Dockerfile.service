@@ -1,0 +1,80 @@
+# =============================================================================
+# Image générique des services HRFlow
+#
+# Le système audité n'était pas conteneurisé (INF-08) : les environnements
+# n'étaient pas reproductibles, le déploiement consistait en un `git pull` suivi
+# d'un `npm install` sur le serveur de production, et rien ne garantissait que
+# ce qui tournait correspondait à ce qui avait été testé (CIC-06).
+#
+# USAGE : docker build -f docker/Dockerfile.service --build-arg SERVICE=auth .
+#         (le contexte de build est la racine du dépôt : les services partagent
+#          le paquet @hrflow/shared via les workspaces npm)
+# =============================================================================
+
+ARG NODE_VERSION=20.17-alpine
+
+# -----------------------------------------------------------------------------
+# Étape 1 — dépendances
+# -----------------------------------------------------------------------------
+FROM node:${NODE_VERSION} AS deps
+
+WORKDIR /app
+
+# Les manifestes sont copiés seuls : tant qu'ils ne changent pas, cette couche
+# reste en cache et l'installation n'est pas rejouée.
+COPY package.json package-lock.json ./
+COPY services/shared/package.json ./services/shared/
+COPY services/api-gateway/package.json ./services/api-gateway/
+COPY services/auth/package.json ./services/auth/
+COPY services/paie/package.json ./services/paie/
+COPY services/conges/package.json ./services/conges/
+COPY services/recrutement/package.json ./services/recrutement/
+COPY frontend/package.json ./frontend/
+
+# `npm ci` : installation strictement conforme au fichier de verrouillage.
+# `--omit=dev` : ni jest, ni eslint, ni supertest dans l'image de production —
+# moins de code embarqué, donc moins de surface d'attaque.
+RUN npm ci --omit=dev --ignore-scripts --workspaces --include-workspace-root \
+  && npm cache clean --force
+
+# -----------------------------------------------------------------------------
+# Étape 2 — image d'exécution
+# -----------------------------------------------------------------------------
+FROM node:${NODE_VERSION} AS runtime
+
+ARG SERVICE
+ARG APP_VERSION=dev
+
+# `curl` sert uniquement à la sonde de disponibilité du conteneur.
+RUN apk add --no-cache curl tini
+
+ENV NODE_ENV=production \
+    APP_VERSION=${APP_VERSION} \
+    SERVICE=${SERVICE} \
+    NPM_CONFIG_UPDATE_NOTIFIER=false
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json ./
+COPY services/shared ./services/shared
+COPY services/${SERVICE} ./services/${SERVICE}
+
+# Répertoire de dépôt des CV : volume persistant, hors de toute arborescence
+# servie par le serveur web (SEC-07). Les CV étaient stockés dans /tmp et
+# disparaissaient à chaque redémarrage.
+RUN mkdir -p /var/lib/hrflow/cv && chown -R node:node /var/lib/hrflow /app
+
+# Exécution sans privilèges : un service compromis ne l'est pas en tant que root.
+USER node
+
+# `tini` comme processus 1 : transmet correctement SIGTERM au processus Node,
+# condition de l'arrêt progressif et donc du déploiement sans interruption.
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# La sonde interroge réellement le service — pas un point d'entrée qui répond
+# 200 en toutes circonstances (INF-01).
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:${PORT:-3000}/health/ready" || exit 1
+
+CMD ["sh", "-c", "node services/${SERVICE}/src/index.js"]
