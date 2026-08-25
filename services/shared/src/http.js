@@ -76,8 +76,9 @@ function corsPolicy(allowedOrigins) {
  * @param {object} options.logger
  * @param {string} [options.allowedOrigins] Liste d'origines séparées par des virgules.
  * @param {string} [options.bodyLimit]      Taille maximale du corps JSON.
+ * @param {object} [options.metrics]        Registre issu de createMetrics().
  */
-function createApp({ logger, allowedOrigins, bodyLimit = '100kb' } = {}) {
+function createApp({ logger, allowedOrigins, bodyLimit = '100kb', metrics } = {}) {
   const app = express()
 
   app.disable('x-powered-by')
@@ -100,6 +101,13 @@ function createApp({ logger, allowedOrigins, bodyLimit = '100kb' } = {}) {
 
   app.use(requestId())
   app.use(requestLogger(logger))
+
+  // Mesure posée avant les routes, exposition réservée au réseau de
+  // supervision (voir nginx/hrflow.conf).
+  if (metrics) {
+    app.use(metrics.mesurer)
+    app.get('/metrics', metrics.exposer)
+  }
   app.use(corsPolicy(allowedOrigins))
   app.use(express.json({ limit: bodyLimit }))
 

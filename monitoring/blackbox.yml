@@ -1,0 +1,36 @@
+# =============================================================================
+# Sondes externes
+#
+# La sonde interrogee est /health/ready, pas /health/live : c'est la
+# disponibilite reelle du service qui interesse la supervision, dependances
+# comprises. L'ancienne sonde /health repondait 200 en toutes circonstances --
+# une supervision branchee dessus serait restee verte pendant les 3 h 07 de
+# l'incident P1.
+# =============================================================================
+
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: [HTTP/1.1, HTTP/2.0]
+      valid_status_codes: [200]
+      method: GET
+      preferred_ip_protocol: ip4
+      fail_if_body_not_matches_regexp:
+        - '"status"\s*:\s*"(ready|alive)"'
+
+  http_2xx_tls:
+    prober: http
+    timeout: 8s
+    http:
+      valid_http_versions: [HTTP/1.1, HTTP/2.0]
+      valid_status_codes: [200]
+      method: GET
+      preferred_ip_protocol: ip4
+      # Un certificat expire rend la plateforme inaccessible meme si tous les
+      # services sont sains. C'est la seule sonde qui le detecte.
+      fail_if_ssl: false
+      fail_if_not_ssl: true
+      tls_config:
+        insecure_skip_verify: false

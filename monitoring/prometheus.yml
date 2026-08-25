@@ -75,6 +75,23 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox-exporter:9115
 
+  # ---------------------------------------------------------------------------
+  # Metriques applicatives — support des quatre signaux d'or
+  #
+  # Chaque service expose /metrics : trafic, erreurs et latence par route, plus
+  # les metriques de processus (saturation). L'endpoint n'est jamais accessible
+  # publiquement : Nginx le restreint au reseau de supervision.
+  # ---------------------------------------------------------------------------
+  - job_name: services-hrflow
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - api-gateway:3000
+          - auth:3001
+          - paie:3002
+          - conges:3003
+          - recrutement:3004
+
   - job_name: postgres
     static_configs:
       - targets: ['postgres-exporter:9187']

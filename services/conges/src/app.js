@@ -28,8 +28,8 @@ const { calculerJoursOuvres, calculerSolde } = require('./domain')
 
 const ROLES_RH = ['rh', 'manager', 'admin']
 
-function createCongesApp({ pool, config, logger }) {
-  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS })
+function createCongesApp({ pool, config, logger, metrics }) {
+  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS, metrics })
 
   app.use(
     healthRouter({

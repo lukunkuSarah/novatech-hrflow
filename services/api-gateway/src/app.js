@@ -29,8 +29,8 @@ function estPublique(req) {
   return ROUTES_PUBLIQUES.some((route) => route.method === req.method && req.path === route.path)
 }
 
-function createGatewayApp({ config, logger, fetchImpl = globalThis.fetch }) {
-  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS })
+function createGatewayApp({ config, logger, fetchImpl = globalThis.fetch, metrics }) {
+  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS, metrics })
 
   const cibles = {
     auth: config.AUTH_URL,

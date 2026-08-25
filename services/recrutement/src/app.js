@@ -27,8 +27,8 @@ const { createUploadMiddleware, enregistrerCv } = require('./uploads')
 const ROLES_RECRUTEMENT = ['rh', 'recruteur', 'admin']
 const STATUTS = ['recu', 'en_cours', 'entretien', 'accepte', 'refuse']
 
-function createRecrutementApp({ pool, config, logger }) {
-  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS })
+function createRecrutementApp({ pool, config, logger, metrics }) {
+  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS, metrics })
 
   app.use(
     healthRouter({

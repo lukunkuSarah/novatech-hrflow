@@ -1,0 +1,122 @@
+# =============================================================================
+# Pile de supervision HRFlow
+#
+# Le systeme audite n'avait aucune supervision. L'incident P1 du 14 aout 2024 a
+# ete decouvert par un client d'hotel qui a telephone au numero d'urgence a
+# 2 h 15 du matin, deux heures et vingt-huit minutes apres la panne.
+#
+# USAGE :
+#   docker compose -f monitoring/docker-compose.monitoring.yml up -d
+#
+#   Grafana        http://localhost:3001   (tableau de bord provisionne)
+#   Prometheus     http://localhost:9090
+#   Alertmanager   http://localhost:9093
+#
+# La pile se raccorde au reseau applicatif cree par docker/docker-compose.yml :
+# elle recupere les metriques sur /metrics et les sondes sur /health/ready.
+# =============================================================================
+
+name: hrflow-supervision
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      # 30 jours : couvre la fenetre glissante du budget d'erreur mensuel.
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alertes.yml:/etc/prometheus/alertes.yml:ro
+      - donnees-prometheus:/prometheus
+    ports:
+      - '127.0.0.1:9090:9090'
+    networks: [supervision, hrflow_interne]
+    security_opt: [no-new-privileges:true]
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - donnees-alertmanager:/alertmanager
+    environment:
+      # Aucune valeur par defaut : sans URL, le routage vers Slack est desactive
+      # explicitement plutot que d'echouer silencieusement (voir alertmanager.yml).
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+    ports:
+      - '127.0.0.1:9093:9093'
+    networks: [supervision]
+    security_opt: [no-new-privileges:true]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    restart: unless-stopped
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD est obligatoire}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+      # Le tableau de bord est servi depuis le depot : aucune modification
+      # manuelle n'est conservee, elle passerait par une demande de fusion.
+      GF_DASHBOARDS_MIN_REFRESH_INTERVAL: 10s
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - donnees-grafana:/var/lib/grafana
+    ports:
+      - '127.0.0.1:3001:3000'
+    networks: [supervision]
+    security_opt: [no-new-privileges:true]
+
+  # Sonde externe : voit la plateforme comme la voit un client. Des services
+  # parfaitement sains derriere un certificat expire donnent une plateforme
+  # inaccessible — seule cette sonde le detecte.
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    restart: unless-stopped
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    networks: [supervision, hrflow_interne]
+    security_opt: [no-new-privileges:true]
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /:/host:ro,rslave
+    networks: [supervision]
+    security_opt: [no-new-privileges:true]
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: ${POSTGRES_EXPORTER_DSN:?POSTGRES_EXPORTER_DSN est obligatoire}
+    networks: [supervision, hrflow_interne]
+    security_opt: [no-new-privileges:true]
+
+networks:
+  supervision:
+    driver: bridge
+  # Reseau cree par docker/docker-compose.yml : la supervision s'y raccorde
+  # pour joindre les services, sans les exposer publiquement.
+  hrflow_interne:
+    external: true
+    name: hrflow_interne
+
+volumes:
+  donnees-prometheus:
+  donnees-grafana:
+  donnees-alertmanager:

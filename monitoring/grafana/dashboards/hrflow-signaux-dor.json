@@ -1,0 +1,437 @@
+{
+  "uid": "hrflow-signaux-dor",
+  "title": "HRFlow — Les quatre signaux d'or",
+  "description": "Latence, trafic, erreurs, saturation. Le systeme audite n'exposait aucune metrique : la seule information disponible etait une sonde /health qui repondait 200 en toutes circonstances.",
+  "tags": ["hrflow", "sre", "production"],
+  "timezone": "browser",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(hrflow_requetes_total, service)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Deploiements",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "expr": "changes(nodejs_process_start_time_seconds[5m]) > 0",
+        "iconColor": "purple",
+        "titleFormat": "Redemarrage de {{service}}"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Etat de service",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Disponibilite — 30 jours glissants",
+      "description": "Engagement contractuel : 99,5 % mensuel, 47 clients concernes.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time(probe_success{job=\"disponibilite-publique\"}[30d]) * 100",
+          "legendFormat": "disponibilite"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 3,
+          "min": 99,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 99.5 },
+              { "color": "green", "value": 99.9 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Budget d'erreur consomme",
+      "description": "Part du budget mensuel (0,5 % d'indisponibilite, soit 3 h 39) deja depensee.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(1 - avg_over_time(probe_success{job=\"disponibilite-publique\"}[30d])) / 0.005 * 100",
+          "legendFormat": "budget consomme"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        }
+      },
+      "options": { "graphMode": "area", "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Services prets",
+      "description": "Sonde /health/ready — elle interroge reellement chaque dependance.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "targets": [
+        { "refId": "A", "expr": "sum(probe_success{job=\"disponibilite-services\"})", "legendFormat": "prets" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "max": 5,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 4 },
+              { "color": "green", "value": 5 }
+            ]
+          }
+        }
+      },
+      "options": { "graphMode": "none", "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Bulletins sans virement abouti",
+      "description": "Depuis la correction de QUA-03, un echec de virement est persiste au lieu d'etre avale.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "targets": [
+        { "refId": "A", "expr": "sum(hrflow_bulletins_paiement_en_echec)", "legendFormat": "en echec" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": { "graphMode": "none", "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+
+    {
+      "type": "row",
+      "title": "1 · LATENCE",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Duree de reponse — centiles 50, 95 et 99",
+      "description": "Un histogramme, pas une moyenne : une reponse sur cent a trois secondes ne bouge pas la moyenne, mais c'est celle que l'utilisateur remarque.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(hrflow_duree_requete_secondes_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(hrflow_duree_requete_secondes_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(hrflow_duree_requete_secondes_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2, "fillOpacity": 6, "showPoints": "never" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 2 }
+            ]
+          }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "calcs": ["mean", "max"], "placement": "right" } }
+    },
+    {
+      "id": 11,
+      "type": "bargauge",
+      "title": "Routes les plus lentes — p95",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(6, histogram_quantile(0.95, sum by (le, route) (rate(hrflow_duree_requete_secondes_bucket{service=~\"$service\"}[5m]))))",
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 3 } },
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+
+    {
+      "type": "row",
+      "title": "2 · TRAFIC",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 }
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Requetes par seconde, par service",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service) (rate(hrflow_requetes_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2, "fillOpacity": 12, "stacking": { "mode": "normal" }, "showPoints": "never" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "calcs": ["mean", "max"], "placement": "right" } }
+    },
+    {
+      "id": 21,
+      "type": "piechart",
+      "title": "Repartition par route",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(6, sum by (route) (rate(hrflow_requetes_total{service=~\"$service\"}[5m])))",
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "options": { "legend": { "displayMode": "table", "placement": "right", "values": ["percent"] } }
+    },
+
+    {
+      "type": "row",
+      "title": "3 · ERREURS",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 }
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "Taux d'erreur — part des reponses 5xx",
+      "description": "Seuil d'alerte a 1 %. Au-dela, l'incident est en cours, pas a venir.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service) (rate(hrflow_requetes_total{service=~\"$service\", statut=~\"5..\"}[5m])) / sum by (service) (rate(hrflow_requetes_total{service=~\"$service\"}[5m])) * 100",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "showPoints": "never" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "calcs": ["mean", "max"], "placement": "right" } }
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Reponses par classe de statut",
+      "description": "401 et 403 en volume anormal signalent une attaque ou une regression d'autorisation.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (statut) (rate(hrflow_requetes_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{statut}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 1, "fillOpacity": 25, "stacking": { "mode": "normal" }, "showPoints": "never" }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Echecs de connexion — detection de force brute",
+      "description": "Le verrouillage de compte intervient au cinquieme echec (SEC-13).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 33 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (motif) (rate(hrflow_connexions_echouees_total[5m]))",
+          "legendFormat": "{{motif}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "showPoints": "never" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "type": "row",
+      "title": "4 · SATURATION",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 }
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "Memoire residente par service",
+      "description": "Limite de 256 Mo par conteneur, declaree dans docker-compose.yml.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 40 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nodejs_process_resident_memory_bytes{service=~\"$service\"}",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 201326592 },
+              { "color": "red", "value": 251658240 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 41,
+      "type": "timeseries",
+      "title": "Retard de la boucle d'evenements",
+      "description": "Un retard soutenu signale un service occupe par du calcul synchrone : les requetes attendent avant meme d'etre traitees.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 40 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nodejs_nodejs_eventloop_lag_p99_seconds{service=~\"$service\"}",
+          "legendFormat": "{{service}} p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 42,
+      "type": "timeseries",
+      "title": "Connexions PostgreSQL",
+      "description": "Une saturation rend la base injoignable pour tous les services a la fois.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 40 },
+      "targets": [
+        { "refId": "A", "expr": "sum(pg_stat_activity_count)", "legendFormat": "utilisees" },
+        { "refId": "B", "expr": "max(pg_settings_max_connections)", "legendFormat": "maximum" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 6, "showPoints": "never" }
+        }
+      }
+    }
+  ]
+}
