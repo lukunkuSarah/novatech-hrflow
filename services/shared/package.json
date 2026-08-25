@@ -1,0 +1,18 @@
+{
+  "name": "@hrflow/shared",
+  "version": "1.0.0",
+  "description": "Briques transverses HRFlow : configuration, journalisation, authentification, gestion d'erreurs",
+  "main": "src/index.js",
+  "private": true,
+  "scripts": {
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.12.0"
+  }
+}
