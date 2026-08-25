@@ -1,0 +1,168 @@
+# =============================================================================
+# Règles d'alerte HRFlow
+#
+# Principe : peu d'alertes, toutes actionnables. Une alerte qui ne dit pas quoi
+# faire finit par être ignorée, et une alerte ignorée équivaut à une absence
+# d'alerte — ce qui était déjà la situation, en plus honnête.
+#
+# Chaque alerte porte l'action attendue et un lien vers le manuel d'exploitation.
+# =============================================================================
+
+groups:
+  # ---------------------------------------------------------------------------
+  # Disponibilité — objectif de détection : moins de 2 minutes
+  # ---------------------------------------------------------------------------
+  - name: disponibilite
+    interval: 15s
+    rules:
+      - alert: PlateformeInaccessible
+        expr: probe_success{job="disponibilite-publique"} == 0
+        for: 1m
+        labels:
+          gravite: P1
+          astreinte: oui
+        annotations:
+          resume: 'HRFlow est inaccessible depuis Internet'
+          description: >-
+            La sonde externe échoue depuis 1 minute. C'est le scénario du
+            14 août 2024, détecté cette fois en moins de 2 minutes au lieu
+            de 2 h 28.
+          action: >-
+            1. Vérifier /health/ready pour identifier le service fautif.
+            2. Si un déploiement a eu lieu dans les 30 dernières minutes :
+               retour arrière immédiat, sans diagnostic préalable.
+            3. docs/RUNBOOK.md § 2
+
+      - alert: ServiceIndisponible
+        expr: probe_success{job="disponibilite-services"} == 0
+        for: 1m
+        labels:
+          gravite: P1
+          astreinte: oui
+        annotations:
+          resume: 'Le service {{ $labels.cible }} ne se déclare plus prêt'
+          description: >-
+            La sonde /health/ready échoue. Contrairement à l'ancienne sonde,
+            celle-ci vérifie réellement les dépendances du service.
+          action: 'docs/RUNBOOK.md § 2 puis § 5'
+
+      - alert: BaseDeDonneesInjoignable
+        expr: pg_up == 0
+        for: 30s
+        labels:
+          gravite: P1
+          astreinte: oui
+        annotations:
+          resume: 'PostgreSQL ne répond plus'
+          description: 'Toutes les fonctions de la plateforme sont hors service.'
+          action: 'Vérifier en priorité la saturation disque — docs/RUNBOOK.md § 2.3'
+
+  # ---------------------------------------------------------------------------
+  # Dégradation — avant que ça ne devienne une coupure
+  # ---------------------------------------------------------------------------
+  - name: degradation
+    interval: 30s
+    rules:
+      - alert: LatenceElevee
+        expr: probe_duration_seconds{job="disponibilite-services"} > 2
+        for: 5m
+        labels:
+          gravite: P2
+        annotations:
+          resume: '{{ $labels.cible }} répond en plus de 2 secondes'
+          action: 'Requêtes lentes et consommation — docs/RUNBOOK.md § 5'
+
+      - alert: ConnexionsBaseSaturees
+        expr: sum(pg_stat_activity_count) / max(pg_settings_max_connections) > 0.8
+        for: 5m
+        labels:
+          gravite: P2
+        annotations:
+          resume: 'Plus de 80 % des connexions PostgreSQL sont utilisées'
+          description: >-
+            Une saturation complète rend la base injoignable pour tous les
+            services simultanément.
+          action: 'Identifier les requêtes actives longues — docs/RUNBOOK.md § 5'
+
+      - alert: DisqueBientotPlein
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.15
+        for: 10m
+        labels:
+          gravite: P2
+        annotations:
+          resume: 'Moins de 15 % d''espace disque disponible'
+          description: >-
+            Combiné à un téléversement non contrôlé, c'était un vecteur de déni
+            de service (SEC-07, corrigé — limite de 5 Mo par fichier).
+          action: 'Purger les sauvegardes locales de plus de 24 h (répliquées sur S3)'
+
+  # ---------------------------------------------------------------------------
+  # Sécurité
+  # ---------------------------------------------------------------------------
+  - name: securite
+    interval: 30s
+    rules:
+      - alert: PicDEchecsDeConnexion
+        expr: sum(rate(hrflow_connexions_echouees_total[5m])) > 10
+        for: 2m
+        labels:
+          gravite: P2
+        annotations:
+          resume: 'Plus de 10 échecs de connexion par seconde'
+          description: >-
+            Attaque par force brute probable. Le verrouillage de compte après
+            5 tentatives (SEC-13) devrait limiter l'impact.
+          action: 'Vérifier les comptes verrouillés — docs/RUNBOOK.md § 6.2'
+
+      - alert: VirementsEnEchec
+        expr: hrflow_bulletins_paiement_en_echec > 0
+        for: 10m
+        labels:
+          gravite: P2
+        annotations:
+          resume: '{{ $value }} bulletin(s) émis sans virement abouti'
+          description: >-
+            Depuis la correction de QUA-03, un échec de virement n'est plus
+            avalé en silence : il est persisté et visible. Avant, le salarié
+            n'était simplement pas payé, sans que personne ne le sache.
+          action: 'Rejeu idempotent — docs/RUNBOOK.md § 5'
+
+      - alert: CertificatTlsBientotExpire
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 14
+        for: 1h
+        labels:
+          gravite: P3
+        annotations:
+          resume: 'Le certificat TLS expire dans moins de 14 jours'
+          action: 'Vérifier le renouvellement automatique (certbot)'
+
+  # ---------------------------------------------------------------------------
+  # Sauvegardes
+  # ---------------------------------------------------------------------------
+  - name: sauvegardes
+    interval: 5m
+    rules:
+      - alert: SauvegardeManquante
+        expr: time() - hrflow_derniere_sauvegarde_timestamp > 5400
+        for: 5m
+        labels:
+          gravite: P2
+        annotations:
+          resume: 'Aucune sauvegarde depuis plus de 90 minutes'
+          description: >-
+            L'objectif de perte maximale est de 15 minutes. Lors de l'incident
+            P1, la sauvegarde la plus récente datait de 1 h 17 avant la panne,
+            et personne ne le savait avant d'en avoir besoin.
+          action: 'Vérifier la tâche planifiée et l''espace disque — scripts/backup.sh'
+
+      - alert: TestDeRestaurationEnRetard
+        expr: time() - hrflow_dernier_test_restauration_timestamp > 86400 * 35
+        for: 1h
+        labels:
+          gravite: P3
+        annotations:
+          resume: 'Aucun test de restauration depuis plus de 35 jours'
+          description: >-
+            Une sauvegarde jamais restaurée est une hypothèse. Aucun test
+            n'avait jamais été réalisé depuis la création du système (INF-02).
+          action: 'docs/RUNBOOK.md § 7'

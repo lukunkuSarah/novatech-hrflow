@@ -1,0 +1,84 @@
+# =============================================================================
+# Supervision HRFlow
+#
+# Contrainte de conception : détecter une coupure en moins de 2 minutes
+# (exigence n°4 de l'audit Partech). Lors de l'incident P1, la détection a pris
+# 2 h 28 — et c'est un client qui a alerté, par téléphone, à 2 h 15 du matin.
+#
+# Le budget de détection se décompose ainsi :
+#   scrape_interval (15 s) + for (60 s) + latence de notification (~15 s) ≈ 90 s
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    environnement: production
+    plateforme: hrflow
+
+rule_files:
+  - alertes.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  # ---------------------------------------------------------------------------
+  # Sondes applicatives
+  #
+  # On interroge /health/ready et non /health/live : c'est la disponibilité
+  # réelle du service qui nous intéresse, dépendances comprises. L'ancienne
+  # sonde répondait 200 en toutes circonstances — une supervision branchée
+  # dessus serait restée verte pendant les 3 h 07 de coupure.
+  # ---------------------------------------------------------------------------
+  - job_name: disponibilite-services
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://api-gateway:3000/health/ready
+          - http://auth:3001/health/ready
+          - http://paie:3002/health/ready
+          - http://conges:3003/health/ready
+          - http://recrutement:3004/health/ready
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: cible
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # ---------------------------------------------------------------------------
+  # Vue depuis l'extérieur
+  #
+  # Complémentaire de la précédente : des services parfaitement sains derrière
+  # un certificat expiré donnent une plateforme inaccessible. Cette sonde voit
+  # ce que voit un client.
+  # ---------------------------------------------------------------------------
+  - job_name: disponibilite-publique
+    metrics_path: /probe
+    params:
+      module: [http_2xx_tls]
+    static_configs:
+      - targets:
+          - https://hrflow.novatech.io/health/live
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: cible
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  - job_name: postgres
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  - job_name: machines
+    static_configs:
+      - targets: ['node-exporter:9100']

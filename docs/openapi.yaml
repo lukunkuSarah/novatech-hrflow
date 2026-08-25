@@ -1,0 +1,619 @@
+openapi: 3.1.0
+
+# =============================================================================
+# Contrats d'interface HRFlow
+#
+# Aucune spécification d'API n'existait (constat DOC-04) : les contrats
+# n'étaient nulle part, ce qui rendait impossible toute intégration, tout test
+# de contrat et toute revue de sécurité des surfaces exposées.
+#
+# Ce document décrit les routes telles qu'elles sont, après remédiation. Deux
+# routes du système audité n'y figurent pas, parce qu'elles ont été supprimées :
+#   POST /paie/migrate       — cause de l'incident P1 du 14 août 2024
+#   GET  /conges/debug/all   — exposition RGPD de toutes les données RH
+# =============================================================================
+
+info:
+  title: HRFlow API
+  version: 3.0.0
+  description: |
+    API de la plateforme RH HRFlow.
+
+    **Authentification.** Toutes les routes exigent un jeton d'accès, à
+    l'exception de la connexion, du renouvellement et des deux étapes de
+    réinitialisation de mot de passe — celles qui servent précisément à obtenir
+    un jeton.
+
+    **Cloisonnement.** Chaque appel est restreint à l'entreprise cliente portée
+    par le jeton. Un compte ne peut accéder à aucune donnée d'une autre
+    entreprise, quel que soit son rôle.
+
+    **Durée de vie.** Le jeton d'accès est valable 15 minutes. Le jeton de
+    renouvellement, valable 7 jours, est révocable.
+  contact:
+    name: Équipe plateforme NovaTech
+    email: plateforme@novatech.io
+
+servers:
+  - url: https://hrflow.novatech.io/api
+    description: Production
+  - url: https://staging.hrflow.novatech.io/api
+    description: Recette (authentification HTTP requise en amont)
+  - url: http://localhost:3000/api
+    description: Développement local
+
+tags:
+  - name: Authentification
+  - name: Congés
+  - name: Paie
+  - name: Recrutement
+  - name: Supervision
+
+security:
+  - jetonAcces: []
+
+paths:
+  # ===========================================================================
+  # Authentification
+  # ===========================================================================
+  /auth/login:
+    post:
+      tags: [Authentification]
+      summary: Ouvrir une session
+      description: |
+        Limité à 10 tentatives par quart d'heure et par adresse IP. Le compte se
+        verrouille 15 minutes après 5 échecs consécutifs.
+
+        La réponse est identique pour un compte inconnu et pour un mot de passe
+        erroné : l'énumération de comptes n'est pas possible.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 1, maxLength: 128 }
+      responses:
+        '200':
+          description: Session ouverte
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  refreshToken: { type: string }
+                  expiresIn: { type: string, example: '15m' }
+                  user: { $ref: '#/components/schemas/Utilisateur' }
+        '400': { $ref: '#/components/responses/RequeteInvalide' }
+        '401':
+          description: Identifiants invalides — message volontairement indifférencié
+        '429': { $ref: '#/components/responses/TropDeRequetes' }
+
+  /auth/refresh:
+    post:
+      tags: [Authentification]
+      summary: Renouveler le jeton d'accès
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: Nouveau jeton d'accès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  expiresIn: { type: string }
+        '401': { description: Jeton de renouvellement invalide, expiré ou révoqué }
+
+  /auth/logout:
+    post:
+      tags: [Authentification]
+      summary: Fermer la session et révoquer les jetons
+      description: Révoque tous les jetons de renouvellement du compte.
+      responses:
+        '204': { description: Session fermée }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  /auth/verify:
+    post:
+      tags: [Authentification]
+      summary: Vérifier la validité d'un jeton
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+      responses:
+        '200':
+          description: Jeton valide
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+                  user: { type: object }
+        '401':
+          description: |
+            Jeton invalide. La réponse ne précise pas la cause de l'échec :
+            elle n'apprendrait rien d'utile à un appelant légitime.
+
+  /auth/password-reset/request:
+    post:
+      tags: [Authentification]
+      summary: Demander une réinitialisation de mot de passe
+      description: |
+        Émet un jeton à usage unique, valable 30 minutes, envoyé par courriel au
+        titulaire de l'adresse. Aucun mot de passe n'est modifié à cette étape.
+
+        La réponse est identique que le compte existe ou non.
+
+        **Correctif SEC-03** : la route d'origine réinitialisait directement le
+        mot de passe de n'importe quelle adresse fournie, sans vérification, et
+        le journalisait en clair.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Demande prise en compte, réponse indifférenciée
+        '429': { $ref: '#/components/responses/TropDeRequetes' }
+
+  /auth/password-reset/confirm:
+    post:
+      tags: [Authentification]
+      summary: Confirmer la réinitialisation
+      description: |
+        Consomme le jeton reçu par courriel. Le changement révoque toutes les
+        sessions existantes du compte.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: { type: string, minLength: 32 }
+                newPassword: { type: string, minLength: 12, maxLength: 128 }
+      responses:
+        '200': { description: Mot de passe mis à jour }
+        '400': { description: Jeton invalide, expiré ou déjà utilisé }
+
+  # ===========================================================================
+  # Congés
+  # ===========================================================================
+  /conges/solde/{employeeId}:
+    get:
+      tags: [Congés]
+      summary: Consulter un solde de congés
+      description: |
+        Accessible au salarié concerné, ou à un rôle `rh`, `manager` ou `admin`
+        de la même entreprise.
+
+        `soldeDisponible` déduit les demandes en attente, contrairement à
+        `soldeTheorique` : la version d'origine n'exposait que le second, ce qui
+        permettait de poser plusieurs fois les mêmes jours.
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Solde' }
+        '400': { $ref: '#/components/responses/RequeteInvalide' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+        '404': { description: Salarié introuvable dans cette entreprise }
+
+  /conges/demande:
+    post:
+      tags: [Congés]
+      summary: Déposer une demande de congé
+      description: |
+        Le salarié concerné est déterminé par le jeton, jamais par le corps de
+        la requête : sans cela, un salarié peut poser des congés au nom d'un autre.
+
+        Le nombre de jours est calculé en jours ouvrés, bornes incluses,
+        week-ends et jours fériés français exclus. Une date de fin antérieure à
+        la date de début est refusée — elle produisait auparavant un nombre de
+        jours négatif, qui augmentait le solde.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dateDebut, dateFin]
+              properties:
+                dateDebut: { type: string, format: date }
+                dateFin: { type: string, format: date }
+                motif: { type: string, maxLength: 500 }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conge' }
+        '400': { description: Dates invalides ou période sans jour ouvré }
+        '409':
+          description: Chevauchement avec une demande existante, ou solde insuffisant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erreur' }
+
+  /conges/{id}/decision:
+    patch:
+      tags: [Congés]
+      summary: Approuver ou refuser une demande
+      description: Réservé aux rôles `rh`, `manager` et `admin`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [approuve, refuse] }
+      responses:
+        '200': { description: Décision enregistrée }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+        '404': { description: Demande introuvable ou déjà traitée }
+
+  /conges:
+    get:
+      tags: [Congés]
+      summary: Lister les demandes de l'entreprise
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+        - { name: offset, in: query, schema: { type: integer, default: 0 } }
+      responses:
+        '200': { description: Liste paginée }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+
+  # ===========================================================================
+  # Paie
+  # ===========================================================================
+  /paie/calculer:
+    post:
+      tags: [Paie]
+      summary: Émettre un bulletin de paie
+      description: |
+        Réservé aux rôles `rh` et `admin`.
+
+        **Idempotent** : un bulletin déjà émis pour la période est renvoyé tel
+        quel, sans nouveau calcul ni nouveau virement. L'ordre de virement porte
+        une clé d'idempotence déterministe, de sorte qu'un rejeu ne peut pas
+        payer deux fois.
+
+        Un échec de virement n'est pas avalé : il est persisté et renvoyé avec
+        un statut 502. Le bulletin existe alors dans l'état
+        `paiement_a_rejouer` ou `paiement_en_echec`.
+
+        Les salariés à temps partiel sont **refusés** plutôt que calculés avec
+        un barème qui ne les couvre pas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [employeeId, mois, annee]
+              properties:
+                employeeId: { type: string }
+                mois: { type: integer, minimum: 1, maximum: 12 }
+                annee: { type: integer, minimum: 2000, maximum: 2100 }
+      responses:
+        '201':
+          description: Bulletin émis et virement effectué
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Bulletin' }
+        '200':
+          description: Bulletin déjà émis pour cette période — réponse idempotente
+        '400': { description: Période invalide, ou cas hors périmètre du barème }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+        '404': { description: Salarié introuvable }
+        '502':
+          description: Bulletin émis, virement en échec — voir `statut`
+
+  /paie/bulletins/{employeeId}:
+    get:
+      tags: [Paie]
+      summary: Lister les bulletins d'un salarié
+      description: Accessible au salarié concerné ou aux rôles `rh` et `admin`.
+      parameters:
+        - { name: employeeId, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 12, maximum: 60 } }
+      responses:
+        '200': { description: Liste des bulletins }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+
+  /paie/bulletins/{id}/rejouer-paiement:
+    post:
+      tags: [Paie]
+      summary: Rejouer un virement en échec
+      description: |
+        Réutilise la clé d'idempotence de la tentative initiale : le prestataire
+        ne peut pas exécuter deux fois le même virement.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Virement abouti, ou bulletin déjà payé }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+        '404': { description: Bulletin introuvable dans cette entreprise }
+
+  # ===========================================================================
+  # Recrutement
+  # ===========================================================================
+  /recrutement/candidat:
+    post:
+      tags: [Recrutement]
+      summary: Déposer une candidature
+      description: |
+        Réservé aux rôles `rh`, `recruteur` et `admin`.
+
+        Le CV doit être un PDF ou un DOCX de 5 Mo au maximum. Trois contrôles
+        successifs sont appliqués : type déclaré, extension, puis **signature
+        binaire réelle** du contenu — les deux premiers étant fournis par le
+        client, donc falsifiables.
+
+        Le nom du fichier est régénéré côté serveur. Le nom d'origine est
+        conservé comme simple libellé et n'entre jamais dans un chemin.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [nom, prenom, email, poste, cv]
+              properties:
+                nom: { type: string, maxLength: 100 }
+                prenom: { type: string, maxLength: 100 }
+                email: { type: string, format: email }
+                poste: { type: string, maxLength: 150 }
+                cv: { type: string, format: binary }
+      responses:
+        '201': { description: Candidature enregistrée }
+        '400': { description: Champs invalides, CV manquant, trop volumineux ou de type non accepté }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+
+  /recrutement/candidats:
+    get:
+      tags: [Recrutement]
+      summary: Lister les candidatures
+      description: Paginé et plafonné — la version d'origine sérialisait toute la table.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 25, maximum: 100 } }
+        - { name: offset, in: query, schema: { type: integer, default: 0 } }
+        - name: statut
+          in: query
+          schema: { type: string, enum: [recu, en_cours, entretien, accepte, refuse] }
+      responses:
+        '200': { description: Liste paginée avec total }
+        '400': { description: Filtre de statut inconnu }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+
+  /recrutement/candidat/{id}/statut:
+    patch:
+      tags: [Recrutement]
+      summary: Modifier le statut d'une candidature
+      description: |
+        Réservé aux rôles habilités. La version d'origine n'effectuait aucune
+        vérification : n'importe quel appelant anonyme pouvait modifier le
+        statut de n'importe quelle candidature.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [statut]
+              properties:
+                statut: { type: string, enum: [recu, en_cours, entretien, accepte, refuse] }
+      responses:
+        '200': { description: Statut modifié }
+        '403': { $ref: '#/components/responses/NonAutorise' }
+        '404': { description: Candidature introuvable dans cette entreprise }
+
+  # ===========================================================================
+  # Supervision
+  # ===========================================================================
+  /health/live:
+    get:
+      tags: [Supervision]
+      summary: Sonde de vivacité
+      description: |
+        Le processus répond-il ? N'interroge aucune dépendance : un service
+        vivant mais temporairement non prêt ne doit pas être redémarré en boucle.
+      security: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: alive }
+                  service: { type: string }
+                  version: { type: string }
+                  uptimeSeconds: { type: integer }
+
+  /health/ready:
+    get:
+      tags: [Supervision]
+      summary: Sonde de disponibilité
+      description: |
+        Le service peut-il traiter du trafic ? Interroge réellement chaque
+        dépendance, avec un délai maximal.
+
+        **Correctif INF-01** : la sonde d'origine renvoyait 200 en toutes
+        circonstances. Une supervision branchée dessus serait restée verte
+        pendant les 3 h 07 de l'incident P1.
+      security: []
+      responses:
+        '200': { description: Toutes les dépendances critiques répondent }
+        '503':
+          description: Au moins une dépendance critique est indisponible
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EtatSante' }
+
+components:
+  securitySchemes:
+    jetonAcces:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Jeton signé en HS256, valable 15 minutes. L'algorithme, l'émetteur et
+        l'audience sont contraints à la vérification : un jeton `alg: none` est
+        refusé.
+
+  responses:
+    RequeteInvalide:
+      description: Données de requête invalides
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erreur' }
+    NonAuthentifie:
+      description: Jeton absent, invalide, expiré ou révoqué
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erreur' }
+    NonAutorise:
+      description: Rôle insuffisant, ou accès à des données ne relevant pas de l'appelant
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erreur' }
+    TropDeRequetes:
+      description: Limitation de débit atteinte
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erreur' }
+
+  schemas:
+    Erreur:
+      type: object
+      description: |
+        Format d'erreur unique à toute l'API. Ne contient jamais de trace
+        d'exécution : le détail reste côté serveur, corrélé par `requestId`.
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: FORBIDDEN }
+            message: { type: string }
+            details: { type: object }
+            requestId: { type: string }
+
+    Utilisateur:
+      type: object
+      properties:
+        id: { type: integer }
+        role: { type: string, enum: [salarie, manager, rh, recruteur, admin] }
+        companyId: { type: integer }
+        employeeId: { type: integer }
+
+    Solde:
+      type: object
+      properties:
+        employeeId: { type: string }
+        joursAcquis: { type: integer }
+        joursPris: { type: integer }
+        joursEnAttente: { type: integer }
+        soldeTheorique: { type: integer }
+        soldeDisponible:
+          type: integer
+          description: Seul chiffre sur lequel s'appuyer pour autoriser une nouvelle demande.
+
+    Conge:
+      type: object
+      properties:
+        id: { type: integer }
+        employee_id: { type: integer }
+        date_debut: { type: string, format: date }
+        date_fin: { type: string, format: date }
+        nombre_jours: { type: integer, minimum: 1 }
+        statut: { type: string, enum: [en_attente, approuve, refuse, annule] }
+
+    Bulletin:
+      type: object
+      properties:
+        bulletinId: { type: integer }
+        employeeId: { type: string }
+        periode: { type: string, example: '2024-06' }
+        brut: { type: number }
+        cotisationsSalariales: { type: number }
+        cotisationsPatronales: { type: number }
+        net: { type: number }
+        coutEmployeur: { type: number }
+        netCentimes:
+          type: integer
+          description: Montant du virement, en centimes entiers — seule unité sans arrondi.
+        statut:
+          type: string
+          enum: [en_attente_paiement, paye, paiement_a_rejouer, paiement_en_echec]
+        bareme:
+          type: object
+          properties:
+            id: { type: string }
+            libelle: { type: string }
+            valide:
+              type: boolean
+              description: Faux tant que le barème n'a pas été validé par un expert-comptable.
+
+    EtatSante:
+      type: object
+      properties:
+        status: { type: string, enum: [ready, unready] }
+        service: { type: string }
+        version: { type: string }
+        checkedAt: { type: string, format: date-time }
+        dependencies:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              status: { type: string, enum: [up, down] }
+              latencyMs: { type: integer }
+              error: { type: string }

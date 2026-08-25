@@ -1,0 +1,204 @@
+# =============================================================================
+# NovaTech HRFlow — pile locale complète
+#
+# `docker compose up` remplace le « voir Théo » du README (DOC-01, INF-10) :
+# n'importe quel membre de l'équipe obtient un environnement identique en une
+# commande, sans accès à la production.
+#
+# USAGE :
+#   cp .env.example .env       # puis renseigner JWT_SECRET
+#   docker compose -f docker/docker-compose.yml up --build
+# =============================================================================
+
+name: hrflow
+
+x-service-commun: &service-commun
+  restart: unless-stopped
+  environment: &env-commun
+    NODE_ENV: ${NODE_ENV:-development}
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+    APP_VERSION: ${VERSION:-dev}
+    JWT_SECRET: ${JWT_SECRET:?JWT_SECRET est obligatoire — aucun secret par défaut (SEC-09)}
+    DATABASE_URL: postgres://hrflow:${DB_PASSWORD:?DB_PASSWORD est obligatoire}@postgres:5432/hrflow
+    ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks: [interne]
+  # Durcissement : système de fichiers en lecture seule, aucun privilège
+  # supplémentaire acquérable. Un service compromis dispose du minimum.
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  deploy:
+    resources:
+      limits:
+        memory: 256M
+
+services:
+  # ---------------------------------------------------------------------------
+  # Base de données
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hrflow
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD est obligatoire}
+      POSTGRES_DB: hrflow
+    volumes:
+      - donnees-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hrflow -d hrflow']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [interne]
+    # Non exposée à l'extérieur : seuls les services du réseau interne y accèdent.
+    # La base auditée était joignable avec un mot de passe publié dans Git.
+    expose:
+      - '5432'
+
+  # ---------------------------------------------------------------------------
+  # Migrations — conteneur éphémère, exécuté avant les services
+  #
+  # Remplace la route HTTP POST /paie/migrate (SEC-04), à l'origine de
+  # l'incident P1 du 14 août 2024.
+  # ---------------------------------------------------------------------------
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE: shared
+    command: ['node', 'db/migrate.js', 'up']
+    environment:
+      DATABASE_URL: postgres://hrflow:${DB_PASSWORD:?DB_PASSWORD est obligatoire}@postgres:5432/hrflow
+    volumes:
+      - ../db:/app/db:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [interne]
+    restart: 'no'
+
+  # ---------------------------------------------------------------------------
+  # Services applicatifs
+  # ---------------------------------------------------------------------------
+  auth:
+    <<: *service-commun
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE: auth
+        APP_VERSION: ${VERSION:-dev}
+    image: ${REGISTRY:-hrflow}/auth:${VERSION:-dev}
+    environment:
+      <<: *env-commun
+      PORT: '3001'
+      MAIL_FROM: no-reply@hrflow.novatech.io
+
+  paie:
+    <<: *service-commun
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE: paie
+        APP_VERSION: ${VERSION:-dev}
+    image: ${REGISTRY:-hrflow}/paie:${VERSION:-dev}
+    environment:
+      <<: *env-commun
+      PORT: '3002'
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:?STRIPE_SECRET_KEY est obligatoire}
+
+  conges:
+    <<: *service-commun
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE: conges
+        APP_VERSION: ${VERSION:-dev}
+    image: ${REGISTRY:-hrflow}/conges:${VERSION:-dev}
+    environment:
+      <<: *env-commun
+      PORT: '3003'
+
+  recrutement:
+    <<: *service-commun
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE: recrutement
+        APP_VERSION: ${VERSION:-dev}
+    image: ${REGISTRY:-hrflow}/recrutement:${VERSION:-dev}
+    environment:
+      <<: *env-commun
+      PORT: '3004'
+      UPLOAD_DIR: /var/lib/hrflow/cv
+    read_only: false
+    volumes:
+      # Les CV survivent au redémarrage du conteneur, contrairement au /tmp
+      # du système audité.
+      - cv-candidats:/var/lib/hrflow/cv
+
+  api-gateway:
+    <<: *service-commun
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE: api-gateway
+        APP_VERSION: ${VERSION:-dev}
+    image: ${REGISTRY:-hrflow}/api-gateway:${VERSION:-dev}
+    environment:
+      <<: *env-commun
+      PORT: '3000'
+      AUTH_URL: http://auth:3001
+      PAIE_URL: http://paie:3002
+      CONGES_URL: http://conges:3003
+      RECRUTEMENT_URL: http://recrutement:3004
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+      paie:
+        condition: service_healthy
+      conges:
+        condition: service_healthy
+      recrutement:
+        condition: service_healthy
+    # Seule la passerelle est exposée : les services métier ne sont joignables
+    # que depuis le réseau interne. Dans le système audité, les cinq services
+    # écoutaient sur toutes les interfaces.
+    ports:
+      - '127.0.0.1:3000:3000'
+
+  # ---------------------------------------------------------------------------
+  # Frontend
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    image: ${REGISTRY:-hrflow}/frontend:${VERSION:-dev}
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8080:8080'
+    networks: [interne]
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  interne:
+    driver: bridge
+
+volumes:
+  donnees-postgres:
+  cv-candidats:

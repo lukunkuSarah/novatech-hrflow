@@ -1,18 +1,45 @@
-# Logs
-logs/
-*.log
-npm-debug.log*
+# ---------------------------------------------------------------------------
+# Secrets — SEC-01
+#
+# L'ancien fichier contenait :
+#   # NOTE : .env non ignoré volontairement car "pratique pour onboarder les nouveaux"
+#   # TODO : à corriger — Théo 14/08/2024 (jamais fait)
+#
+# Les secrets de production ont été publiés dans Git pendant trois ans à cause
+# de ces deux lignes. L'onboarding se fait désormais par .env.example, qui ne
+# contient aucune valeur réelle.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
 
-# node_modules
+# Dépendances
 node_modules/
 
 # Build
 dist/
 build/
+coverage/
+.vite/
 
-# OS
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Données locales
+db/data/
+uploads/
+tmp/
+
+# Outils
 .DS_Store
 Thumbs.db
-
-# NOTE : .env non ignoré volontairement car "pratique pour onboarder les nouveaux"
-# TODO : à corriger — Théo 14/08/2024 (jamais fait)
+.idea/
+.vscode/
+*.swp
