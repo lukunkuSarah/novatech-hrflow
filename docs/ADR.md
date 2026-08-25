@@ -53,9 +53,9 @@ vérifier. Le besoin de diagnostic est couvert par la journalisation structurée
 Le code contenait des valeurs de repli codées en dur :
 
 ```js
-process.env.JWT_SECRET || '[SECRET-REVOQUE]'
-process.env.DB_PASSWORD || '[SECRET-REVOQUE]'
-process.env.STRIPE_SECRET_KEY || 'sk_live_51NovaTech2021…'
+process.env.JWT_SECRET || 'novatech_jwt_super_secret_key_…'
+process.env.DB_PASSWORD || 'Nt@2021#Prod!…'
+process.env.STRIPE_SECRET_KEY || 'sk_live_51NovaTech…'
 ```
 
 Ces valeurs permettent à un service de démarrer dans un environnement mal
