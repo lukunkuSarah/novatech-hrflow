@@ -1,0 +1,335 @@
+# =============================================================================
+# NovaTech HRFlow — Pipeline d'intégration et de déploiement continus
+#
+# Remplace `deploy.yml`, qui déployait en production à chaque push, sur `main`
+# comme sur `dev`, sans test, sans analyse de sécurité et sans possibilité de
+# revenir en arrière (constats CIC-01 à CIC-10).
+#
+# Cinq étapes :
+#   1. BUILD    — dépendances verrouillées, lint, build, image immuable
+#   2. TEST     — tests unitaires et d'intégration, couverture bloquante
+#   3. SECURITY — secrets, dépendances, analyse statique, image
+#   4. STAGING  — déploiement automatique sur un environnement isolé
+#   5. PROD     — déploiement après approbation, sans interruption, réversible
+#
+# Les étapes 2 et 3 s'exécutent en parallèle : elles sont indépendantes, et
+# rien ne justifie de faire attendre l'analyse de sécurité que les tests
+# finissent. Le déploiement attend les deux.
+#
+# Politique sur les actions tierces : aucune. Le pipeline audité utilisait
+# `appleboy/ssh-action@master`, une référence mutable exécutée avec les accès
+# de production (CIC-05). Ici, seules les actions officielles GitHub sont
+# utilisées, épinglées sur une version majeure ; tout le reste passe par des
+# commandes shell explicites.
+# =============================================================================
+
+name: Pipeline HRFlow
+
+on:
+  push:
+    # `dev` avait été ajoutée par erreur aux déclencheurs de déploiement et
+    # n'a jamais été retirée (CIC-02). Seule `main` peut atteindre la production.
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Deux déploiements simultanés ne peuvent plus se marcher dessus (CIC-09).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Permissions minimales, élargies explicitement par job si nécessaire.
+permissions:
+  contents: read
+
+env:
+  # Node 20 LTS : la version 16 utilisée en CI est en fin de support depuis
+  # septembre 2023 (CIC-07).
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  # ===========================================================================
+  # ÉTAPE 1 — BUILD
+  # ===========================================================================
+  build:
+    name: 1 · Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Version — empreinte de commit courte
+        id: version
+        run: echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Installation de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # `npm ci` et non `npm install` : installation reproductible à partir du
+      # fichier de verrouillage. Le dépôt audité n'en contenait aucun (QUA-08).
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Analyse statique de style
+        run: npm run lint
+
+      - name: Vérification du formatage
+        run: npm run format
+
+      - name: Construction du frontend
+        run: npm run build
+
+      - name: Conservation du frontend construit
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-${{ steps.version.outputs.version }}
+          path: frontend/dist
+          retention-days: 7
+
+      # L'artefact déployé est une image immuable identifiée par l'empreinte du
+      # commit. Le système audité faisait un `git pull` sur le serveur, puis y
+      # reconstruisait : ce qui était testé n'était jamais ce qui tournait, et
+      # il n'existait aucun objet vers lequel revenir (CIC-06).
+      - name: Authentification au registre d'images
+        if: github.event_name == 'push'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Construction et publication des images
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          for SERVICE in api-gateway auth paie conges recrutement; do
+            IMAGE="${REGISTRY}/${IMAGE_PREFIX}/${SERVICE}"
+            IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+            echo "::group::Image $SERVICE"
+            docker build \
+              --file docker/Dockerfile.service \
+              --build-arg SERVICE="$SERVICE" \
+              --build-arg APP_VERSION="$VERSION" \
+              --tag "${IMAGE}:${VERSION}" \
+              --tag "${IMAGE}:latest" \
+              .
+            docker push "${IMAGE}:${VERSION}"
+            docker push "${IMAGE}:latest"
+            echo "::endgroup::"
+          done
+
+          IMAGE=$(echo "${REGISTRY}/${IMAGE_PREFIX}/frontend" | tr '[:upper:]' '[:lower:]')
+          docker build --file docker/Dockerfile.frontend --tag "${IMAGE}:${VERSION}" --tag "${IMAGE}:latest" .
+          docker push "${IMAGE}:${VERSION}"
+          docker push "${IMAGE}:latest"
+
+  # ===========================================================================
+  # ÉTAPE 2 — TEST
+  # ===========================================================================
+  test:
+    name: 2 · Test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # Barrière bloquante. Le seuil de couverture est défini dans le
+      # `jest.config.js` de chaque service : un service qui passe sous 80 %
+      # fait échouer cette étape.
+      #
+      # Préalable indispensable : le `npm test` de la racine renvoyait
+      # `echo 'No tests found' && exit 0`, donc restait vert quoi qu'il arrive
+      # (QUA-07). Réactiver les tests sans corriger cela n'aurait rien changé.
+      - name: Tests des services (couverture ≥ 80 % bloquante)
+        run: npm test
+
+      - name: Tests du frontend
+        run: npm run test:frontend
+
+      - name: Conservation des rapports de couverture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ needs.build.outputs.version }}
+          path: |
+            services/*/coverage
+            frontend/coverage
+          retention-days: 7
+
+  # ===========================================================================
+  # ÉTAPE 3 — SECURITY
+  # ===========================================================================
+  security:
+    name: 3 · Security
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Historique complet : la recherche de secrets doit pouvoir remonter
+          # les commits, pas seulement inspecter l'état courant.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # ---------------------------------------------------------------------
+      # 3.1 — Détection de secrets
+      #
+      # C'est la barrière qui aurait empêché SEC-01 : le `.env` de production
+      # a été commité en octobre 2021 et est resté dans l'historique trois ans.
+      # ---------------------------------------------------------------------
+      - name: Recherche de secrets dans le code et l'historique
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo \
+            zricethezav/gitleaks:v8.18.4 detect \
+            --source=/repo \
+            --config=/repo/.gitleaks.toml \
+            --redact \
+            --verbose \
+            --exit-code 1
+
+      # ---------------------------------------------------------------------
+      # 3.2 — Analyse de composition logicielle
+      # ---------------------------------------------------------------------
+      - name: Audit des dépendances
+        run: npm audit --audit-level=high
+
+      # ---------------------------------------------------------------------
+      # 3.3 — Analyse statique de sécurité
+      # ---------------------------------------------------------------------
+      - name: Analyse du système de fichiers (dépendances et configurations)
+        run: |
+          docker run --rm -v "$PWD:/repo" \
+            aquasec/trivy:0.54.1 filesystem /repo \
+            --scanners vuln,secret,misconfig \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --no-progress
+
+      # ---------------------------------------------------------------------
+      # 3.4 — Vérification de non-régression des vulnérabilités fermées
+      #
+      # Certaines corrections ne se vérifient pas par un test unitaire mais par
+      # l'absence d'un motif dans le code. Cette étape empêche leur retour.
+      # ---------------------------------------------------------------------
+      - name: Vérification des motifs interdits
+        run: bash scripts/verify-security-fixes.sh
+
+  # ===========================================================================
+  # ÉTAPE 4 — DÉPLOIEMENT STAGING
+  # ===========================================================================
+  deploy-staging:
+    name: 4 · Deploy staging
+    runs-on: ubuntu-latest
+    needs: [build, test, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging.hrflow.novatech.io
+    steps:
+      - uses: actions/checkout@v4
+
+      # Authentification par clé, jamais par mot de passe (CIC-04, INF-04).
+      # L'ancien pipeline transportait un mot de passe SSH, et le script local
+      # désactivait explicitement la vérification d'hôte.
+      - name: Préparation de l'accès SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # Empreinte du serveur connue à l'avance : pas de StrictHostKeyChecking=no.
+          echo "${{ secrets.STAGING_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Déploiement sur staging
+        env:
+          HOTE: ${{ secrets.STAGING_HOST }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: bash scripts/deploy.sh staging "$VERSION"
+
+      # Un environnement de staging n'a de valeur que si on vérifie qu'il
+      # fonctionne. Le staging audité était une copie non authentifiée de la
+      # production, que personne ne testait (INF-07, SEC-16).
+      - name: Tests de fumée
+        env:
+          BASE_URL: https://staging.hrflow.novatech.io
+        run: npm run smoke
+
+  # ===========================================================================
+  # ÉTAPE 5 — DÉPLOIEMENT PRODUCTION
+  # ===========================================================================
+  deploy-production:
+    name: 5 · Deploy production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    # L'environnement `production` est configuré dans GitHub avec des relecteurs
+    # obligatoires : le job reste en attente tant qu'une personne habilitée n'a
+    # pas approuvé. C'est le point de contrôle humain qui manquait le 14 août.
+    environment:
+      name: production
+      url: https://hrflow.novatech.io
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Préparation de l'accès SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.PROD_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      # Sauvegarde avant toute modification de schéma. Lors de l'incident P1,
+      # la sauvegarde la plus récente datait de 1 h 17 avant la panne (INF-02).
+      - name: Sauvegarde de la base avant déploiement
+        env:
+          HOTE: ${{ secrets.PROD_HOST }}
+        run: bash scripts/backup.sh production
+
+      - name: Déploiement sans interruption
+        env:
+          HOTE: ${{ secrets.PROD_HOST }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: bash scripts/deploy.sh production "$VERSION"
+
+      - name: Vérification post-déploiement
+        env:
+          BASE_URL: https://hrflow.novatech.io
+        run: npm run smoke
+
+      # Retour arrière automatique. L'incident P1 a duré 3 h 07 non pas à cause
+      # de la migration, mais parce qu'aucune procédure de retour arrière
+      # n'existait (INF-03).
+      - name: Retour arrière automatique en cas d'échec
+        if: failure()
+        env:
+          HOTE: ${{ secrets.PROD_HOST }}
+        run: bash scripts/rollback.sh production
+
+      - name: Étiquetage de la version déployée
+        if: success()
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          # Rend identifiable la version en production, ce qui était impossible
+          # jusqu'ici (CIC-10).
+          echo "Version $VERSION déployée en production le $(date -u +%FT%TZ)"

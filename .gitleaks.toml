@@ -1,0 +1,57 @@
+# =============================================================================
+# Configuration de la détection de secrets
+#
+# Cette étape du pipeline aurait empêché SEC-01 : le fichier .env contenant les
+# secrets de production a été commité en octobre 2021 et est resté accessible
+# dans l'historique Git pendant trois ans, avec le mot de passe PostgreSQL, le
+# JWT_SECRET, les clés AWS et une clé Stripe `sk_live_`.
+# =============================================================================
+
+title = "HRFlow — détection de secrets"
+
+[extend]
+useDefault = true
+
+# -----------------------------------------------------------------------------
+# Règles propres au contexte NovaTech
+# -----------------------------------------------------------------------------
+[[rules]]
+id = "hrflow-jwt-secret"
+description = "Secret de signature JWT en clair"
+regex = '''(?i)jwt[_-]?(refresh[_-]?)?secret\s*[=:]\s*['"]?[A-Za-z0-9_\-]{16,}'''
+tags = ["hrflow", "jwt"]
+
+[[rules]]
+id = "hrflow-db-password"
+description = "Mot de passe de base de données en clair"
+regex = '''(?i)(db|database|postgres)[_-]?password\s*[=:]\s*['"]?[^\s'"]{8,}'''
+tags = ["hrflow", "database"]
+
+[[rules]]
+id = "hrflow-stripe-live"
+description = "Clé Stripe de production"
+regex = '''sk_live_[A-Za-z0-9]{10,}'''
+tags = ["hrflow", "stripe", "critique"]
+
+# -----------------------------------------------------------------------------
+# Exclusions
+#
+# Volontairement minimales. Chaque exclusion est une zone d'ombre : on n'exclut
+# que ce dont on peut justifier qu'aucune valeur réelle n'y figure.
+# -----------------------------------------------------------------------------
+[allowlist]
+description = "Fichiers ne contenant aucune valeur réelle"
+paths = [
+  # Modèle de configuration : uniquement des noms de variables, jamais de valeurs.
+  '''\.env\.example$''',
+  # Documentation d'audit : cite les secrets compromis pour les inventorier.
+  # Ils sont tous révoqués (voir docs/00-AUDIT-J1.md § 9.2).
+  '''^docs/''',
+  '''^node_modules/''',
+  '''package-lock\.json$'''
+]
+regexes = [
+  # Secrets de test, sans valeur en dehors de la suite de tests.
+  '''secret-de-test-uniquement-non-utilise-en-production''',
+  '''sk_test_'''
+]
