@@ -1,0 +1,1474 @@
+<title>Remédiation HRFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+/* ===========================================================================
+   NOVATECH HRFLOW — SUPPORT DE SOUTENANCE
+   Équipe BB_NUMERIQUE
+
+   Direction artistique : rapport d'audit éditorial.
+   Papier chaud, filets capillaires, folios surdimensionnés, grille suisse de
+   12 colonnes exploitée en asymétrie. Le contraste typographique est porté par
+   la GRAISSE (Manrope 200 contre 800), pas par la couleur.
+
+   Le document assume un parti pris clair : une seule ambiance, lumineuse.
+   Toutes les couleurs sont donc peintes explicitement, sans dépendre du thème
+   de l'hôte.
+   =========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* — Encres & papier — */
+  --papier:    #FAFAF8;
+  --blanc:     #FFFFFF;
+  --teinte:    #F1F2ED;
+  --encre:     #14161A;
+  /* Texte courant en noir : aucun paragraphe ne doit paraître délavé. */
+  --encre-2:   #14161A;
+  /* Légendes et étiquettes : nettement sombres, jamais grisées. */
+  --encre-3:   #4A4E56;
+  --filet:     #E3E3DC;
+  --filet-2:   #CFCFC6;
+
+  /* — Marque : violet profond, encré. Porte les titres et les signaux. — */
+  --marque:      #4E2A84;
+  --marque-pale: #EDE8F6;
+
+  /* — Données : palette sourde, encrée, jamais fluo — */
+  --crit:  #A93A2E;
+  --eleve: #8A5A12;
+  --moyen: #8E8430;
+  --ok:    #2E7A58;
+
+  /* — Rythme d'espacement — */
+  --e1: 4px;  --e2: 8px;  --e3: 12px; --e4: 16px;
+  --e5: 24px; --e6: 32px; --e7: 48px; --e8: 64px; --e9: 96px;
+
+  /* — Rayons : rares et faibles — */
+  --r-s: 3px; --r-m: 8px; --r-l: 14px;
+
+  /* — Motion — */
+  --courbe: cubic-bezier(.16, 1, .3, 1);
+  --rapide: 220ms;
+  --normal: 480ms;
+  --lent:   680ms;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: auto; }
+
+body {
+  margin: 0;
+  background: var(--papier);
+  color: var(--encre);
+  font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  font-feature-settings: 'ss01' 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ===========================================================================
+   1 · SYSTÈME TYPOGRAPHIQUE
+   La graisse porte la hiérarchie. Le 200 et le 800 cohabitent dans un même
+   titre : c'est le geste graphique récurrent du document.
+   =========================================================================== */
+
+.display {
+  font-size: clamp(3rem, 6.6vw, 5.4rem);
+  font-weight: 700; line-height: .98; letter-spacing: -.042em;
+  margin: 0; text-wrap: balance; color: var(--marque);
+}
+.display b { font-weight: 800; letter-spacing: -.048em; }
+
+.h1 {
+  font-size: clamp(2.4rem, 4.8vw, 3.7rem);
+  font-weight: 700; line-height: 1.04; letter-spacing: -.034em;
+  margin: 0; text-wrap: balance; color: var(--marque);
+}
+.h1 b { font-weight: 800; letter-spacing: -.038em; }
+
+.h2 {
+  font-size: clamp(1.75rem, 3.1vw, 2.4rem);
+  font-weight: 700; line-height: 1.14; letter-spacing: -.028em;
+  margin: 0; text-wrap: balance; color: var(--marque);
+}
+
+.h3 {
+  font-size: 1.24rem; font-weight: 700; line-height: 1.3;
+  letter-spacing: -.014em; margin: 0; color: var(--marque);
+}
+
+.lede {
+  font-size: clamp(1.06rem, 1.5vw, 1.28rem);
+  font-weight: 300; line-height: 1.48; letter-spacing: -.012em;
+  color: var(--encre-2); margin: 0; max-width: 46ch;
+}
+.lede b { font-weight: 600; color: var(--encre); }
+
+p { margin: 0; color: var(--encre-2); max-width: 62ch; }
+p.sm { font-size: .94rem; line-height: 1.55; }
+strong { font-weight: 600; color: var(--encre); }
+em { font-style: italic; }
+
+/* Étiquette : le seul élément récurrent du document, réduit au minimum. */
+.lbl {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11.5px; font-weight: 500;
+  letter-spacing: .15em; text-transform: uppercase;
+  color: var(--encre-3); margin: 0;
+}
+.lbl.marque { color: var(--marque); }
+
+.mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: .92em; letter-spacing: -.01em;
+}
+code { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .9em; }
+
+/* Chiffres : matière graphique à part entière. */
+.fig {
+  font-weight: 800; letter-spacing: -.05em; line-height: .86;
+  font-variant-numeric: tabular-nums; color: var(--encre);
+}
+.fig.xl  { font-size: clamp(4.5rem, 13vw, 11rem); }
+.fig.lg  { font-size: clamp(2.6rem, 5vw, 4rem); }
+.fig.md  { font-size: clamp(1.9rem, 2.8vw, 2.5rem); }
+.fig.fin { font-weight: 200; letter-spacing: -.04em; }
+
+/* ===========================================================================
+   2 · GRILLE
+   12 colonnes, marges généreuses. Les compositions s'y appuient sans s'y
+   soumettre : plusieurs blocs débordent volontairement d'une colonne.
+   =========================================================================== */
+
+.pont { position: relative; }
+
+.s {
+  display: none;
+  min-height: 100vh;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: clamp(16px, 2vw, 28px);
+  row-gap: 0;
+  align-content: center;
+  padding: clamp(64px, 8vh, 104px) clamp(24px, 6.2vw, 96px) clamp(72px, 9vh, 100px);
+  max-width: 1560px; margin: 0 auto;
+}
+.s.on { display: grid; }
+
+/* Placements — .g{départ}-{portée} */
+.g1-3  { grid-column: 1 / span 3; }
+.g1-4  { grid-column: 1 / span 4; }
+.g1-5  { grid-column: 1 / span 5; }
+.g1-6  { grid-column: 1 / span 6; }
+.g1-7  { grid-column: 1 / span 7; }
+.g1-8  { grid-column: 1 / span 8; }
+.g1-9  { grid-column: 1 / span 9; }
+.g1-12 { grid-column: 1 / span 12; }
+.g2-6  { grid-column: 2 / span 6; }
+.g4-9  { grid-column: 4 / span 9; }
+.g5-8  { grid-column: 5 / span 8; }
+.g6-7  { grid-column: 6 / span 7; }
+.g7-6  { grid-column: 7 / span 6; }
+.g8-5  { grid-column: 8 / span 5; }
+.g9-4  { grid-column: 9 / span 4; }
+.g10-3 { grid-column: 10 / span 3; }
+
+.mt2 { margin-top: var(--e2); }
+.mt3 { margin-top: var(--e3); }
+.mt4 { margin-top: var(--e4); }
+.mt5 { margin-top: var(--e5); }
+.mt6 { margin-top: var(--e6); }
+.mt7 { margin-top: var(--e7); }
+.mt8 { margin-top: var(--e8); }
+/* Écart fixe après un bloc déjà bordé : évite que deux filets se lisent
+   comme un trait double. */
+.apres-bord { margin-top: 50px; }
+
+.pile   { display: flex; flex-direction: column; }
+.pile.x2 { gap: var(--e2); }
+.pile.x3 { gap: var(--e3); }
+.pile.x4 { gap: var(--e4); }
+.pile.x5 { gap: var(--e5); }
+.pile.x6 { gap: var(--e6); }
+
+/* Filets : la séparation par défaut du document, à la place des bordures. */
+.filet { height: 1px; background: var(--filet); border: 0; margin: 0; }
+.filet.fort { background: var(--filet-2); }
+.filet.marque { height: 2px; background: var(--marque); }
+
+/* ===========================================================================
+   3 · COMPOSANTS
+   =========================================================================== */
+
+/* — Métrique sans conteneur : titre, valeur, annotation. — */
+.metrique { display: flex; flex-direction: column; gap: 6px; }
+.metrique .v { font-weight: 800; font-size: clamp(2rem, 3.2vw, 2.9rem); letter-spacing: -.045em; line-height: .9; font-variant-numeric: tabular-nums; }
+.metrique .n { font-size: .88rem; color: var(--encre-2); }
+
+/* — Bande de métriques en pied de page, séparée par des filets verticaux. — */
+.bandeau {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  column-gap: clamp(28px, 3.4vw, 56px); border-top: 1px solid var(--filet);
+}
+.bandeau > * { position: relative; padding: var(--e6) 0 var(--e2); }
+.bandeau > * + *::before {
+  content: ''; position: absolute; top: 0; left: calc(-1 * clamp(14px, 1.7vw, 28px));
+  width: 1px; height: 30px; background: var(--filet);
+}
+
+/* — Entrée éditoriale : index suspendu dans la marge, contenu aligné. — */
+.entrees { display: flex; flex-direction: column; }
+.entree {
+  display: grid; grid-template-columns: 58px 1fr; gap: var(--e5);
+  padding: var(--e6) 0; border-top: 1px solid var(--filet);
+  transition: background var(--rapide) var(--courbe);
+}
+.entree:last-child { border-bottom: 1px solid var(--filet); }
+.entree:hover { background: var(--teinte); }
+.entree .idx {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500;
+  color: var(--marque); letter-spacing: .04em; padding-top: 5px;
+}
+.entree .corps { display: flex; flex-direction: column; gap: 5px; }
+.entree .corps > .h3 { font-size: 1.06rem; }
+
+/* — Entrée à deux colonnes : affirmation à gauche, conséquence à droite. — */
+.entree.duo .corps { display: grid; grid-template-columns: minmax(210px, 5fr) 7fr; gap: var(--e5); align-items: start; }
+@media (max-width: 900px) { .entree.duo .corps { grid-template-columns: 1fr; gap: var(--e2); } }
+
+/* Deux colonnes : la lecture reste verticale, la page respire horizontalement. */
+.entrees.deux { display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(32px, 4.4vw, 72px); }
+.entrees.deux .entree { border-bottom: 0; padding: 22px 0; }
+.entrees.deux .entree:nth-last-child(-n+2) { border-bottom: 1px solid var(--filet); }
+@media (max-width: 1000px) { .entrees.deux { grid-template-columns: 1fr; } }
+
+/* — Numéro d'étape surdimensionné, en graisse fine : structure, pas décor. — */
+.etapes {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  column-gap: clamp(28px, 3.4vw, 56px); border-top: 1px solid var(--filet-2);
+}
+.etapes.sans-trait { border-top: 0; }
+.etape { position: relative; padding: var(--e6) 0 var(--e2); }
+.etape + .etape::before {
+  content: ''; position: absolute; top: 0; left: calc(-1 * clamp(14px, 1.7vw, 28px));
+  width: 1px; height: 34px; background: var(--filet);
+}
+/* Sans filet horizontal au-dessus, l'amorce n'a rien à quoi s'accrocher. */
+.etapes.sans-trait .etape + .etape::before { display: none; }
+.etape .n {
+  font-size: clamp(2.4rem, 3.6vw, 3.4rem); font-weight: 200;
+  letter-spacing: -.04em; line-height: .9; color: var(--encre);
+  font-variant-numeric: tabular-nums; display: block; margin-bottom: var(--e3);
+}
+.etape.actif .n { color: var(--marque); }
+
+/* — Marginalia : note d'auteur, rattachée par un filet vertical. — */
+.marge {
+  border-left: 2px solid var(--marque); padding: var(--e2) 0 var(--e2) var(--e5);
+  font-size: 1rem; line-height: 1.62; color: var(--encre-2);
+}
+.marge .src {
+  display: block; margin-top: var(--e3);
+  font-family: 'IBM Plex Mono', monospace; font-size: 10.5px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--encre-3);
+}
+
+/* — Surface : employée avec parcimonie, uniquement pour le code. — */
+.surface { background: var(--blanc); border: 1px solid var(--filet); border-radius: var(--r-m); }
+
+pre {
+  margin: 0; padding: var(--e4) var(--e5); overflow-x: auto;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: clamp(.74rem, .95vw, .86rem); line-height: 1.72;
+  color: var(--encre-2); background: var(--blanc);
+  border: 1px solid var(--filet); border-radius: var(--r-m);
+}
+pre b { color: var(--encre); font-weight: 500; }
+pre .cm { color: var(--encre-3); }
+.bloc-code { display: flex; flex-direction: column; gap: var(--e3); }
+.bloc-code > .lbl { display: flex; align-items: center; gap: var(--e2); }
+.bloc-code > .lbl::before { content: ''; width: 18px; height: 2px; background: currentColor; }
+.lbl.avant { color: var(--crit); }
+.lbl.apres { color: var(--ok); }
+
+/* — Spécimen : une ligne de code traitée comme une planche typographique. — */
+.specimen {
+  border-top: 1px solid var(--filet-2); border-bottom: 1px solid var(--filet-2);
+  padding: var(--e6) 0; text-align: center;
+}
+.specimen code {
+  font-size: clamp(.86rem, 1.5vw, 1.22rem); color: var(--encre);
+  letter-spacing: -.01em; line-height: 1.7;
+}
+
+/* ===========================================================================
+   4 · VISUALISATION DE DONNÉES
+   =========================================================================== */
+
+/* — Barre empilée : répartition par gravité. — */
+.empilee { display: flex; height: 34px; border-radius: var(--r-s); overflow: hidden; background: var(--teinte); }
+.empilee > i { width: 0; transition: width var(--lent) var(--courbe); }
+.on .empilee > i { width: var(--w); }
+.sev-c { background: var(--crit); }
+.sev-e { background: var(--eleve); }
+.sev-m { background: var(--moyen); }
+.sev-f { background: var(--filet-2); }
+.legende { display: flex; flex-wrap: wrap; gap: var(--e5); }
+.legende > span { display: flex; align-items: baseline; gap: var(--e2); font-size: .9rem; color: var(--encre-2); }
+.legende i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; transform: translateY(-1px); }
+.legende b { font-weight: 700; color: var(--encre); font-variant-numeric: tabular-nums; }
+
+/* — Barre de progression fine : couverture de tests. — */
+.jauges { display: flex; flex-direction: column; }
+.jauge { display: grid; grid-template-columns: 148px 1fr 62px; align-items: center; gap: var(--e4); padding: 14px 0; border-bottom: 1px solid var(--filet); }
+.jauge:first-child { border-top: 1px solid var(--filet); }
+.jauge .nom { font-family: 'IBM Plex Mono', monospace; font-size: .8rem; color: var(--encre-2); }
+.jauge .piste { height: 4px; background: var(--teinte); border-radius: 2px; overflow: hidden; }
+.jauge .piste > i { display: block; height: 100%; width: 0; background: var(--marque); border-radius: 2px; transition: width var(--lent) var(--courbe); }
+.on .jauge .piste > i { width: var(--w); }
+.jauge .val { font-family: 'IBM Plex Mono', monospace; font-size: .84rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--encre); }
+.seuil { position: relative; }
+.seuil::after {
+  content: ''; position: absolute; top: -4px; bottom: -4px; left: 80%;
+  width: 1px; background: var(--filet-2);
+}
+
+/* — Graphe de réduction : échelle logarithmique, avant → après. — */
+.reduc { display: flex; flex-direction: column; }
+.mesure { padding: 20px 0; border-bottom: 1px solid var(--filet); }
+.mesure:first-child { border-top: 1px solid var(--filet-2); }
+.mesure .tete { display: flex; justify-content: space-between; align-items: baseline; gap: var(--e4); margin-bottom: var(--e4); }
+.mesure .tete .nom { font-size: 1rem; font-weight: 600; color: var(--encre); }
+.mesure .tete .gain { font-family: 'IBM Plex Mono', monospace; font-size: .82rem; color: var(--marque); }
+/* L'étiquette d'objectif passe SOUS l'axe : au-dessus, elle chevauchait la
+   valeur « après » lorsque les deux positions étaient proches. */
+.axe { position: relative; height: 42px; }
+.axe .rail { position: absolute; left: 0; right: 0; top: 18px; height: 1px; background: var(--filet-2); }
+.axe .trace {
+  position: absolute; top: 18px; height: 1px; background: var(--marque);
+  transform-origin: right center; transform: scaleX(0);
+  transition: transform var(--lent) var(--courbe) 120ms;
+}
+.on .axe .trace { transform: scaleX(1); }
+.pt { position: absolute; top: 13px; width: 11px; height: 11px; border-radius: 50%; margin-left: -5.5px; opacity: 0; transition: opacity var(--normal) var(--courbe) 320ms; }
+.on .pt { opacity: 1; }
+.pt.a { background: var(--blanc); border: 2px solid var(--crit); }
+.pt.b { background: var(--marque); }
+.pt .tip {
+  position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: nowrap;
+  color: var(--encre-2);
+}
+.pt.b .tip { color: var(--marque); font-weight: 500; }
+/* Point situé en bout d'axe : l'étiquette s'aligne à droite au lieu de
+   déborder du cadre. */
+.pt.bord .tip { left: auto; right: -2px; transform: none; }
+.axe .obj { position: absolute; top: 11px; height: 15px; width: 1px; background: var(--encre-3); }
+.axe .obj span {
+  position: absolute; top: 19px; left: 50%; transform: translateX(-50%);
+  font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--encre-3); white-space: nowrap;
+}
+
+/* — Chronologie verticale : colonne d'heures, épine, événements. — */
+.chrono { display: flex; flex-direction: column; --epine: 102px; }
+/* Heures alignées à droite, contre l'épine. */
+.chrono .h { text-align: right; }
+.evt { display: grid; grid-template-columns: 66px 1fr; gap: var(--e5); position: relative; padding: var(--e3) 0 var(--e3) var(--e5); }
+.evt::before { content: ''; position: absolute; left: var(--epine); top: 0; bottom: 0; width: 1px; background: var(--filet-2); }
+.chrono > *:first-child::before { top: 25px; }
+.chrono > *:last-child::before { bottom: auto; height: 25px; }
+.evt::after {
+  content: ''; position: absolute; left: var(--epine); top: 22px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--filet-2); transform: translateX(-3px);
+  box-shadow: 0 0 0 4px var(--papier);
+}
+.evt.pic::after { background: var(--crit); width: 9px; height: 9px; transform: translateX(-4px); }
+.evt.fin::after { background: var(--ok); }
+.evt .h { font-family: 'IBM Plex Mono', monospace; font-size: .84rem; color: var(--encre-3); font-variant-numeric: tabular-nums; padding-top: 3px; }
+.evt .t { font-size: .98rem; color: var(--encre-2); }
+.evt.pic .t { color: var(--encre); font-weight: 500; }
+
+/* Le silence de 2 h 28, rendu par un vide réel dans la composition. */
+.silence {
+  display: grid; grid-template-columns: 66px 1fr; gap: var(--e5);
+  padding: var(--e6) 0 var(--e6) var(--e5); position: relative;
+}
+.silence::before {
+  content: ''; position: absolute; left: var(--epine); top: 0; bottom: 0;
+  width: 1px; background: repeating-linear-gradient(to bottom, var(--filet-2) 0 5px, transparent 5px 11px);
+}
+.silence .d { font-size: clamp(2.2rem, 3.4vw, 3.1rem); font-weight: 200; letter-spacing: -.04em; color: var(--crit); line-height: 1; }
+.silence .d span { font-size: .42em; font-weight: 500; letter-spacing: 0; }
+
+/* — Diagramme de pipeline : tracé SVG animé. — */
+.schema { width: 100%; height: auto; display: block; overflow: visible; }
+.schema .voie { stroke: var(--filet-2); stroke-width: 1; }
+.schema .flux {
+  stroke: var(--marque); stroke-width: 1.5; fill: none;
+  stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+  transition: stroke-dashoffset 1100ms var(--courbe) 160ms;
+}
+.on .schema .flux { stroke-dashoffset: 0; }
+.schema .noeud { fill: var(--papier); stroke: var(--encre); stroke-width: 1.5; }
+.schema .barriere { fill: var(--crit); }
+.schema text { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--encre-3); letter-spacing: .1em; }
+.schema text.titre { font-family: Manrope, sans-serif; font-size: 15px; font-weight: 700; fill: var(--encre); letter-spacing: -.01em; }
+
+/* — Micro-diagramme de vagues : mini-Gantt sans conteneur. — */
+.vagues { display: flex; flex-direction: column; }
+/* Trois colonnes : le libellé était positionné en absolu après la barre et
+   sortait du conteneur pour les vagues les plus tardives. */
+.vague { display: grid; grid-template-columns: 74px 1fr 112px; gap: var(--e3); align-items: center; padding: 13px 0; border-bottom: 1px solid var(--filet); }
+.vague:first-child { border-top: 1px solid var(--filet); }
+.vague .q { font-family: 'IBM Plex Mono', monospace; font-size: .76rem; color: var(--encre-3); }
+.vague .b { position: relative; height: 22px; display: flex; align-items: center; }
+.vague .b > i {
+  position: absolute; height: 3px; background: var(--marque); border-radius: 2px;
+  left: var(--x); width: 0; transition: width var(--normal) var(--courbe) var(--dl, 0ms);
+}
+.on .vague .b > i { width: var(--w); }
+.vague .t { font-size: .82rem; color: var(--encre); }
+
+/* — Liste de conformité : coche tracée, pas d'icône décorative. — */
+.conformite { display: grid; grid-template-columns: repeat(auto-fit, minmax(226px, 1fr)); gap: 0 var(--e6); }
+.conf { display: grid; grid-template-columns: 18px 46px 1fr; align-items: center; gap: var(--e3); padding: 11px 0; border-bottom: 1px solid var(--filet); font-size: .88rem; color: var(--encre-2); }
+.conf svg { width: 13px; height: 13px; stroke: var(--ok); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.conf svg path { stroke-dasharray: 22; stroke-dashoffset: 22; transition: stroke-dashoffset 340ms var(--courbe) var(--dl, 0ms); }
+.on .conf svg path { stroke-dashoffset: 0; }
+.conf .code { font-family: 'IBM Plex Mono', monospace; font-size: .78rem; color: var(--encre); }
+
+/* — Comparaison avant → après, sans carte. — */
+.bascules { display: flex; flex-direction: column; }
+.bascule {
+  display: grid; grid-template-columns: 1fr 56px 1fr; align-items: center;
+  gap: var(--e4); padding: var(--e4) 0; border-top: 1px solid var(--filet);
+}
+.bascule:last-child { border-bottom: 1px solid var(--filet); }
+.bascule.tete { padding: 0 0 var(--e2); border-top: 0; }
+.bascule .av { font-size: 1rem; color: var(--encre-3); }
+.bascule .fl { display: flex; justify-content: center; color: var(--marque); }
+.bascule .fl svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.bascule .ap { font-size: 1.05rem; color: var(--encre); font-weight: 700; }
+@media (max-width: 900px) {
+  .bascule { grid-template-columns: 1fr; gap: var(--e2); }
+  .bascule .fl { justify-content: flex-start; }
+  .bascule.tete { display: none; }
+}
+
+/* — Ressources : liste dépouillée, sans conteneur. — */
+.ressources { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 0 var(--e7); }
+.res { display: flex; flex-direction: column; gap: 5px; padding: var(--e5) 0; border-bottom: 1px solid var(--filet); }
+.res .p { font-family: 'IBM Plex Mono', monospace; font-size: .82rem; color: var(--marque); overflow-wrap: break-word; }
+.res .d { font-size: .9rem; color: var(--encre-2); }
+
+/* ===========================================================================
+   5 · CHROME DE NAVIGATION
+   Une seule barre, en pied. Les segments sont cliquables.
+   =========================================================================== */
+
+.pied {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 58px; z-index: 60;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--e5);
+  padding: 0 clamp(24px, 6.2vw, 96px);
+  background: linear-gradient(to top, var(--papier) 62%, rgba(250,250,248,0));
+}
+.folio { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.folio b { color: var(--encre); font-weight: 500; }
+.folio .sec { color: var(--encre-2); }
+
+.segments { display: flex; gap: 3px; flex: 1; max-width: 620px; }
+.seg { flex: 1; height: 22px; padding: 0; background: none; border: 0; cursor: pointer; position: relative; }
+.seg::after { content: ''; position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: var(--filet-2); transition: background var(--rapide) var(--courbe), height var(--rapide) var(--courbe), top var(--rapide) var(--courbe); }
+.seg:hover::after { background: var(--encre-3); }
+.seg[aria-current='true']::after { background: var(--marque); height: 3px; top: 9px; }
+.seg:focus-visible { outline: 2px solid var(--marque); outline-offset: 2px; border-radius: 2px; }
+
+.fleches { display: flex; gap: var(--e2); }
+.fleche {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  background: var(--blanc); border: 1px solid var(--filet); border-radius: var(--r-s);
+  color: var(--encre-2); cursor: pointer;
+  transition: transform var(--rapide) var(--courbe), border-color var(--rapide) var(--courbe), box-shadow var(--rapide) var(--courbe);
+}
+.fleche svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 1.7; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.fleche:hover { transform: translateY(-2px); border-color: var(--filet-2); box-shadow: 0 3px 10px rgba(20,22,26,.07); color: var(--encre); }
+.fleche:active { transform: translateY(0); }
+.fleche:focus-visible { outline: 2px solid var(--marque); outline-offset: 2px; }
+
+/* Filet de tête, discret : repère de progression continu. */
+.tete-rail { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: transparent; z-index: 60; }
+.tete-rail > i { display: block; height: 100%; width: 0; background: var(--marque); transition: width var(--normal) var(--courbe); }
+
+/* ===========================================================================
+   6 · MOTION
+   Entrée en cascade. Fondu + translation courte, courbe d'atterrissage douce.
+   Aucun rebond, aucune rotation, aucun zoom.
+   =========================================================================== */
+
+[data-a] { opacity: 0; }
+.s.on [data-a] {
+  animation: monter var(--normal) var(--courbe) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes monter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s.on [data-a] { animation: none; opacity: 1; }
+  .empilee > i, .jauge .piste > i, .vague .b > i { transition: none; }
+  .axe .trace, .pt, .conf svg path, .schema .flux, .tete-rail > i { transition: none; }
+  .fleche { transition: none; }
+}
+
+/* ===========================================================================
+   7 · ADAPTATION
+   =========================================================================== */
+
+@media (max-width: 1000px) {
+  .s { grid-template-columns: 1fr; row-gap: var(--e5); }
+  .s > * { grid-column: 1 / -1 !important; }
+  .mt7, .mt8 { margin-top: var(--e5); }
+  /* En colonne unique, l'amorce verticale n'a plus de colonne à séparer. */
+  .bandeau > * + *::before, .etape + .etape::before { display: none; }
+}
+/* Portables 1440×810 : les marges se resserrent plutôt qu'une diapositive
+   ne déborde pendant la projection. */
+@media (max-height: 900px) {
+  .s { padding-top: clamp(52px, 6vh, 80px); padding-bottom: clamp(64px, 8vh, 86px); }
+  .mt7 { margin-top: var(--e6); }
+  .mt8 { margin-top: var(--e7); }
+}
+@media print {
+  .pied, .tete-rail { display: none; }
+  .s { display: grid !important; page-break-after: always; min-height: 0; }
+  [data-a] { opacity: 1 !important; animation: none !important; }
+}
+</style>
+
+<div class="tete-rail"><i id="jauge-tete"></i></div>
+
+<main class="pont" id="pont">
+
+  <!-- ═══ 01 · COUVERTURE ═══════════════════════════════════════════════ -->
+  <section class="s" data-sec="Couverture">
+    <div class="g1-9" data-a>
+      <p class="lbl">NovaTech HRFlow — Soutenance</p>
+    </div>
+    <div class="g10-3" style="text-align:right" data-a>
+      <p class="lbl">Équipe BB_NUMERIQUE</p>
+    </div>
+    <hr class="filet fort g1-12 mt4" data-a>
+
+    <h1 class="display g1-9 mt8" data-a>
+      Un système qui n'était<br>pas fragile.<br><b>Il était ouvert.</b>
+    </h1>
+
+    <div class="g1-7 mt6" data-a>
+      <p class="lede">
+        Remédiation de la plateforme RH HRFlow après l'incident P1 du 14 août 2024
+        et le gel de <b>1,8 M€</b> par Partech Ventures.
+      </p>
+    </div>
+
+    <div class="g1-12 mt8 bandeau">
+      <div class="metrique" data-a><span class="v" data-compte="51">0</span><span class="n">constats d'audit</span></div>
+      <div class="metrique" data-a><span class="v" data-compte="12">0</span><span class="n">critiques, tous fermés</span></div>
+      <div class="metrique" data-a><span class="v" data-compte="235">0</span><span class="n">tests automatisés</span></div>
+      <div class="metrique" data-a><span class="v" data-compte="5">0</span><span class="n">étapes de pipeline</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ 02 · CHRONOLOGIE ══════════════════════════════════════════════ -->
+  <section class="s" data-sec="L'incident">
+    <div class="g1-4 pile x5">
+      <p class="lbl" data-a>Nuit du 14 au 15 août 2024</p>
+      <h2 class="h1" data-a>Trois heures sept.<br><b>Personne ne l'a vu.</b></h2>
+      <p class="sm" data-a>
+        L'incident n'a pas duré si longtemps à cause de la migration. Il a duré
+        parce que rien, dans le système, n'était capable de signaler qu'il avait lieu.
+      </p>
+      <div class="mt5" data-a>
+        <p class="lbl">Impact</p>
+        <p class="sm mt2">8 200 utilisateurs · 3 résiliations en deux semaines · 2 mises en demeure · déclaration CNIL · départ du CTO.</p>
+      </div>
+    </div>
+
+    <div class="g6-7 chrono">
+      <div class="evt" data-a><span class="h">23:30</span><span class="t">Migration SQL lancée en production via <code>POST /paie/migrate</code></span></div>
+      <div class="evt pic" data-a><span class="h">23:47</span><span class="t">La table <code>employees</code> est corrompue. La plateforme tombe.</span></div>
+
+      <div class="silence" data-a>
+        <span class="h lbl" style="padding-top:8px">Silence</span>
+        <div>
+          <div class="d">2<span>h</span>28</div>
+          <p class="sm mt2" style="max-width:44ch">
+            Aucune alerte. Aucun tableau de bord. La sonde <code>/health</code> répondait
+            <code>200 OK</code> — comme toujours, quoi qu'il arrive.
+          </p>
+        </div>
+      </div>
+
+      <div class="evt" data-a><span class="h">02:15</span><span class="t">Un client d'hôtel appelle le numéro d'urgence. <strong>C'était ça, la supervision.</strong></span></div>
+      <div class="evt" data-a><span class="h">02:25</span><span class="t">Tentative de retour arrière. Aucune procédure documentée.</span></div>
+      <div class="evt fin" data-a><span class="h">02:54</span><span class="t">Restauration d'une sauvegarde de 22 h 30 — 1 h 17 de données perdues.</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ 03 · MÉTHODE (processus) ══════════════════════════════════════ -->
+  <section class="s" data-sec="Méthode">
+    <div class="g1-6" data-a>
+      <p class="lbl">Jour 1 — Méthode d'audit</p>
+      <h2 class="h1 mt4">Nous n'avons pas relu Partech.<br><b>Nous avons audité le système.</b></h2>
+    </div>
+    <div class="g9-4" data-a>
+      <div class="marge">
+        Les <code>// TODO</code> et <code>// à retirer</code> du code ont été traités comme des
+        indices, jamais comme des preuves. Les problèmes les plus graves ne portaient
+        aucun commentaire : personne dans l'équipe précédente n'en avait conscience.
+        <span class="src">Note de méthode</span>
+      </div>
+    </div>
+
+    <div class="g1-12 mt8 etapes">
+      <div class="etape" data-a>
+        <span class="n">01</span>
+        <h3 class="h3">Passe documentaire</h3>
+        <p class="sm mt2">Post-mortem et rapport d'audit lus <em>avant</em> le code, pour lister les hypothèses à vérifier.</p>
+      </div>
+      <div class="etape actif" data-a>
+        <span class="n">02</span>
+        <h3 class="h3">Passe code, à froid</h3>
+        <p class="sm mt2">100 % des fichiers relus ligne à ligne, <strong>sans</strong> la liste Partech. C'est cette passe qui a produit les 12 constats supplémentaires.</p>
+      </div>
+      <div class="etape" data-a>
+        <span class="n">03</span>
+        <h3 class="h3">Passe infrastructure</h3>
+        <p class="sm mt2">CI/CD, Nginx, script de déploiement, historique Git — et les fichiers absents.</p>
+      </div>
+      <div class="etape" data-a>
+        <span class="n">04</span>
+        <h3 class="h3">Croisement</h3>
+        <p class="sm mt2">Priorisation par <strong>exploitabilité × impact</strong>, jamais par facilité de correction.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 04 · KPI + RÉPARTITION ════════════════════════════════════════ -->
+  <section class="s" data-sec="Constats">
+    <div class="g1-4 pile x4">
+      <p class="lbl" data-a>Résultat de l'audit</p>
+      <div data-a>
+        <span class="fig xl" data-compte="51">0</span>
+      </div>
+      <p class="lede" data-a>constats distincts, dont <b>12 critiques</b> et <b>12 absents</b> du rapport d'audit externe.</p>
+    </div>
+
+    <div class="g6-7 pile x5">
+      <div data-a>
+        <p class="lbl">Répartition par gravité</p>
+        <div class="empilee mt3" role="img" aria-label="12 critiques, 21 élevés, 17 moyens, 1 faible">
+          <i class="sev-c" style="--w:23.5%"></i>
+          <i class="sev-e" style="--w:41.2%"></i>
+          <i class="sev-m" style="--w:33.3%"></i>
+          <i class="sev-f" style="--w:2%"></i>
+        </div>
+        <div class="legende mt4">
+          <span><i class="sev-c"></i><b>12</b> critique</span>
+          <span><i class="sev-e"></i><b>21</b> élevé</span>
+          <span><i class="sev-m"></i><b>17</b> moyen</span>
+          <span><i class="sev-f"></i><b>1</b> faible</span>
+        </div>
+      </div>
+
+      <div data-a>
+        <p class="lbl mt5">En moins de dix minutes, sans compte et sans outil</p>
+      </div>
+
+      <div class="entrees deux">
+        <div class="entree" data-a>
+          <span class="idx">A</span>
+          <div class="corps">
+            <h3 class="h3">Lire toutes les données RH</h3>
+            <p class="sm"><code>GET /conges/debug/all</code> — jointure complète congés × salariés, tous clients confondus, sans authentification.</p>
+          </div>
+        </div>
+        <div class="entree" data-a>
+          <span class="idx">B</span>
+          <div class="corps">
+            <h3 class="h3">Prendre le contrôle de n'importe quel compte</h3>
+            <p class="sm"><code>POST /auth/reset-password</code> — réinitialise le mot de passe de toute adresse fournie, sans jeton.</p>
+          </div>
+        </div>
+        <div class="entree" data-a>
+          <span class="idx">C</span>
+          <div class="corps">
+            <h3 class="h3">Couper la plateforme</h3>
+            <p class="sm"><code>POST /paie/migrate</code> — le vecteur exact du 14 août, toujours ouvert au jour de l'audit.</p>
+          </div>
+        </div>
+        <div class="entree" data-a>
+          <span class="idx">D</span>
+          <div class="corps">
+            <h3 class="h3">Forger des jetons valides</h3>
+            <p class="sm">Le <code>JWT_SECRET</code> est publié dans l'historique Git depuis octobre 2021.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 05 · LES 12 CONSTATS MANQUANTS ════════════════════════════════ -->
+  <section class="s" data-sec="Constats">
+    <div class="g1-7" data-a>
+      <p class="lbl">Différenciateur — 12 constats absents du rapport Partech</p>
+      <h2 class="h2 mt4">Trois d'entre eux invalident des correctifs « évidents »</h2>
+    </div>
+    <div class="g9-4" style="align-self:end" data-a>
+      <p class="sm">Chaque ligne renvoie à un test de non-régression : si la vulnérabilité se rouvre, le pipeline échoue.</p>
+    </div>
+
+    <div class="g1-12 mt6 entrees deux">
+      <div class="entree" data-a>
+        <span class="idx">QUA-07</span>
+        <div class="corps">
+          <h3 class="h3"><code>npm test</code> exécute <code>echo &amp;&amp; exit 0</code></h3>
+          <p class="sm">Réactiver les tests dans le pipeline n'aurait rien changé : la barrière serait restée verte quoi qu'il arrive.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">QUA-09</span>
+        <div class="corps">
+          <h3 class="h3">Le frontend n'est pas constructible</h3>
+          <p class="sm"><code>public/</code> et le point d'entrée sont absents : l'étape « build » ne peut pas réussir. Elle est décorative.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">INF-05</span>
+        <div class="corps">
+          <h3 class="h3"><code>deploy.sh staging</code> déploie la production</h3>
+          <p class="sm">Le script lit l'argument d'environnement… et ne s'en sert jamais. IP de production en dur, <code>git pull origin main</code>.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">QUA-01</span>
+        <div class="corps">
+          <h3 class="h3">Aucun <code>try/catch</code> sur les routes asynchrones</h3>
+          <p class="sm">Express 4 n'intercepte pas les rejets de promesse : une requête malformée arrête le processus. Déni de service sur les cinq services.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">QUA-05</span>
+        <div class="corps">
+          <h3 class="h3">Dates inversées → jours négatifs</h3>
+          <p class="sm">Le solde de congés <em>augmente</em>. Fraude exploitable par tout salarié, sans outil.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">QUA-03</span>
+        <div class="corps">
+          <h3 class="h3">Virements sans clé d'idempotence</h3>
+          <p class="sm">Un simple rejeu paie deux fois le même salarié.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">SEC-08</span>
+        <div class="corps">
+          <h3 class="h3">Aucun cloisonnement multi-locataire</h3>
+          <p class="sm">Invisible ligne par ligne : c'est un défaut d'architecture, visible seulement en lisant les cinq services ensemble.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="sm g1-12 mt5" data-a>
+      Également : SEC-03 (prise de contrôle de compte) · SEC-07 (téléversement non contrôlé) ·
+      SEC-13 (aucune limitation de débit) · SEC-18/19/21 (chaîne d'authentification) · QUA-02 (calcul de paie).
+    </p>
+  </section>
+
+  <!-- ═══ 06 · COMPARAISON CODE ═════════════════════════════════════════ -->
+  <section class="s" data-sec="Correctifs">
+    <div class="g1-8" data-a>
+      <p class="lbl">SEC-03 — Prise de contrôle de compte</p>
+      <h2 class="h2 mt4">Le défaut n'était pas un mauvais code.<br>C'était une absence.</h2>
+    </div>
+
+    <div class="g1-5 mt6 bloc-code" data-a>
+      <p class="lbl avant">Avant — n'importe qui, n'importe quel compte</p>
+      <pre>app.post('/auth/reset-password', async (req, res) =&gt; {
+  const { email } = req.body
+  <span class="cm">// aucun jeton, aucune vérification de propriété</span>
+  const newPassword = Math.random().toString(36).slice(-8)
+  const hash = await bcrypt.hash(newPassword, 10)
+
+  await pool.query('UPDATE users SET password_hash = $1
+                    WHERE email = $2', [hash, email])
+
+  <b>console.log(`[RESET] New password for ${email}:
+               ${newPassword}`)</b>
+  res.json({ message: 'Password reset email sent' })
+})</pre>
+    </div>
+
+    <div class="g7-6 mt6 bloc-code" data-a>
+      <p class="lbl apres">Après — preuve de possession obligatoire</p>
+      <pre><span class="cm">// 1. Demande : émet un jeton, ne change rien</span>
+const token = crypto.randomBytes(32).toString('hex')
+await pool.query(`INSERT INTO password_resets
+  (token_hash, user_id, expires_at) VALUES ($1, $2,
+   NOW() + INTERVAL '30 minutes')`,
+  [<b>hashToken(token)</b>, user.id])
+await mailer.sendPasswordReset({ email, token })
+
+<span class="cm">// Réponse identique si le compte n'existe pas</span>
+res.json({ message: 'Si un compte existe…' })
+
+<span class="cm">// 2. Confirmation : consomme le jeton et révoque
+//    toutes les sessions ouvertes</span></pre>
+    </div>
+
+    <div class="g1-12 apres-bord bandeau">
+      <div data-a><p class="lbl">Jeton</p><p class="sm mt2">Aléatoire, stocké haché, usage unique, trente minutes.</p></div>
+      <div data-a><p class="lbl">Journal</p><p class="sm mt2">Le mot de passe finissait dans <code>/logs/</code>, exposé publiquement par Nginx.</p></div>
+      <div data-a><p class="lbl">Énumération</p><p class="sm mt2">Réponse strictement identique pour un compte inconnu.</p></div>
+    </div>
+  </section>
+
+  <!-- ═══ 07 · SPÉCIMEN ═════════════════════════════════════════════════ -->
+  <section class="s" data-sec="Correctifs">
+    <div class="g1-6" data-a>
+      <p class="lbl">QUA-05 — La fraude aux congés</p>
+      <h2 class="h1 mt4">Une ligne.<br><b>Trois défauts.</b></h2>
+    </div>
+
+    <div class="g1-12 mt7 specimen" data-a>
+      <code>const nombreJours = Math.ceil(<br>&nbsp;&nbsp;(new Date(dateFin) - new Date(dateDebut)) / (1000 * 60 * 60 * 24)<br>)</code>
+    </div>
+
+    <div class="g1-12 mt6 etapes sans-trait">
+      <div class="etape" data-a>
+        <span class="n">01</span>
+        <h3 class="h3">Valeur négative</h3>
+        <p class="sm mt2">Des dates inversées produisent un nombre négatif, qui vient <em>augmenter</em> le solde. Un formulaire suffit.</p>
+      </div>
+      <div class="etape" data-a>
+        <span class="n">02</span>
+        <h3 class="h3">Jours non ouvrés</h3>
+        <p class="sm mt2">Week-ends et jours fériés décomptés comme des jours travaillés.</p>
+      </div>
+      <div class="etape" data-a>
+        <span class="n">03</span>
+        <h3 class="h3">Borne exclue</h3>
+        <p class="sm mt2">Un congé d'une seule journée valait zéro jour.</p>
+      </div>
+    </div>
+
+    <div class="g1-12 mt6" data-a>
+      <p class="lede">Corrigé à <b>trois niveaux</b>, parce qu'un seul ne suffit pas.</p>
+    </div>
+    <div class="g1-12 mt4 bandeau">
+      <div data-a><p class="lbl marque">Domaine</p><p class="sm mt2">Jours ouvrés, bornes incluses, fériés mobiles calculés — Pâques, Ascension, Pentecôte.</p></div>
+      <div data-a><p class="lbl marque">Application</p><p class="sm mt2">Chevauchement et solde disponible vérifiés sous verrou, dans une transaction.</p></div>
+      <div data-a><p class="lbl marque">Base</p><p class="sm mt2"><code>CHECK (date_fin &gt;= date_debut)</code> — une contrainte ne se commente pas « temporairement ».</p></div>
+    </div>
+  </section>
+
+  <!-- ═══ 08 · PRIORISATION ═════════════════════════════════════════════ -->
+  <section class="s" data-sec="Priorisation">
+    <div class="g1-7" data-a>
+      <p class="lbl">Plan de remédiation</p>
+      <h2 class="h2 mt4">Trois règles ont dicté l'ordre</h2>
+    </div>
+
+    <div class="g1-7 mt6 entrees">
+      <div class="entree" data-a>
+        <span class="idx">01</span>
+        <div class="corps">
+          <h3 class="h3">On referme d'abord ce qui est ouvert</h3>
+          <p class="sm">Un pipeline exemplaire qui déploie un système ouvert reste un système ouvert. La rotation des secrets passe donc avant l'injection SQL : la clé Stripe <code>sk_live_</code> et les clés AWS sont exploitables <em>sans passer par l'application</em>.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">02</span>
+        <div class="corps">
+          <h3 class="h3">On ne teste pas du code qu'on va réécrire</h3>
+          <p class="sm">Écrire les tests avant les correctifs aurait figé le comportement défectueux dans la suite de tests.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">03</span>
+        <div class="corps">
+          <h3 class="h3">On n'automatise pas un déploiement sans retour arrière</h3>
+          <p class="sm">Leçon directe du P1 : la panne n'a pas duré 3 h 07 à cause de la migration, mais parce que personne ne savait l'annuler.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="g9-4 mt6" data-a>
+      <p class="lbl">Séquencement — cinq jours</p>
+      <div class="vagues mt4">
+        <div class="vague"><span class="q">V0 · H+4</span><span class="b"><i style="--x:0%;--w:14%;--dl:0ms"></i></span><span class="t">Endiguement</span></div>
+        <div class="vague"><span class="q">V1 · J1–J2</span><span class="b"><i style="--x:14%;--w:22%;--dl:70ms"></i></span><span class="t">Vulnérabilités</span></div>
+        <div class="vague"><span class="q">V2 · J2–J3</span><span class="b"><i style="--x:34%;--w:22%;--dl:140ms"></i></span><span class="t">Tests, pipeline</span></div>
+        <div class="vague"><span class="q">V3 · J3–J4</span><span class="b"><i style="--x:54%;--w:20%;--dl:210ms"></i></span><span class="t">Infrastructure</span></div>
+        <div class="vague"><span class="q">V4 · J4–J5</span><span class="b"><i style="--x:72%;--w:18%;--dl:280ms"></i></span><span class="t">Observabilité</span></div>
+        <div class="vague"><span class="q">V5 · J4–J5</span><span class="b"><i style="--x:72%;--w:18%;--dl:350ms"></i></span><span class="t">Documentation</span></div>
+      </div>
+      <p class="sm mt4" style="font-size:.85rem">Les vagues 4 et 5 sont menées en parallèle : elles ne partagent aucune dépendance.</p>
+    </div>
+  </section>
+
+  <!-- ═══ 09 · DIAGRAMME DE PIPELINE ════════════════════════════════════ -->
+  <section class="s" data-sec="Pipeline">
+    <div class="g1-6" data-a>
+      <p class="lbl">Architecture cible</p>
+      <h2 class="h2 mt4">Cinq étapes.<br>Quatre barrières bloquantes.</h2>
+    </div>
+    <div class="g9-4" style="align-self:end" data-a>
+      <p class="sm">Les étapes 2 et 3 s'exécutent en parallèle : elles sont indépendantes, et rien ne justifie de faire attendre l'analyse de sécurité.</p>
+    </div>
+
+    <div class="g1-12 mt8" data-a>
+      <svg class="schema" viewBox="0 0 1180 208" role="img" aria-label="Pipeline en cinq étapes : build, test, security, staging, production">
+        <line class="voie" x1="24" y1="58" x2="1156" y2="58"></line>
+        <path class="flux" style="--len:1132" d="M24 58 H1156"></path>
+
+        <g>
+          <circle class="noeud" cx="24" cy="58" r="7"></circle>
+          <text class="titre" x="24" y="98">Build</text>
+          <text x="24" y="122">npm ci · lint</text>
+          <text x="24" y="140">image immuable</text>
+          <rect class="barriere" x="24" y="160" width="26" height="2"></rect>
+          <text x="24" y="180" style="fill:#A93A2E">BLOQUANT</text>
+        </g>
+        <g>
+          <circle class="noeud" cx="307" cy="58" r="7"></circle>
+          <text class="titre" x="307" y="98">Test</text>
+          <text x="307" y="122">235 tests</text>
+          <text x="307" y="140">couverture ≥ 80 %</text>
+          <rect class="barriere" x="307" y="160" width="26" height="2"></rect>
+          <text x="307" y="180" style="fill:#A93A2E">BLOQUANT</text>
+        </g>
+        <g>
+          <circle class="noeud" cx="590" cy="58" r="7"></circle>
+          <text class="titre" x="590" y="98">Security</text>
+          <text x="590" y="122">secrets · dépendances</text>
+          <text x="590" y="140">analyse statique</text>
+          <rect class="barriere" x="590" y="160" width="26" height="2"></rect>
+          <text x="590" y="180" style="fill:#A93A2E">BLOQUANT</text>
+        </g>
+        <g>
+          <circle class="noeud" cx="873" cy="58" r="7"></circle>
+          <text class="titre" x="873" y="98">Staging</text>
+          <text x="873" y="122">migrations isolées</text>
+          <text x="873" y="140">tests de fumée</text>
+          <rect class="barriere" x="873" y="160" width="26" height="2"></rect>
+          <text x="873" y="180" style="fill:#A93A2E">BLOQUANT</text>
+        </g>
+        <g text-anchor="end">
+          <circle class="noeud" cx="1149" cy="58" r="10" style="fill:#4E2A84;stroke:#4E2A84"></circle>
+          <text class="titre" x="1156" y="98">Production</text>
+          <text x="1156" y="122">approbation humaine</text>
+          <text x="1156" y="140">retour arrière &lt; 2 min</text>
+          <rect x="1130" y="160" width="26" height="2" style="fill:#4A4E56"></rect>
+          <text x="1156" y="180">APPROBATION</text>
+        </g>
+
+        <text x="24" y="34" style="fill:#4A4E56">01</text>
+        <text x="307" y="34" style="fill:#4A4E56">02</text>
+        <text x="590" y="34" style="fill:#4A4E56">03</text>
+        <text x="873" y="34" style="fill:#4A4E56">04</text>
+        <text x="1156" y="34" style="fill:#4A4E56" text-anchor="end">05</text>
+      </svg>
+    </div>
+
+    <div class="g1-12 mt8" data-a>
+      <hr class="filet">
+      <p class="lede mt5">Chaque barrière ferme un incident <b>déjà survenu</b> — aucune n'est théorique.</p>
+    </div>
+  </section>
+
+  <!-- ═══ 10 · CORRESPONDANCE ÉTAPE → INCIDENT ══════════════════════════ -->
+  <section class="s" data-sec="Pipeline">
+    <div class="g1-6" data-a>
+      <p class="lbl">Traçabilité</p>
+      <h2 class="h2 mt4">Ce que chaque étape rend impossible</h2>
+    </div>
+
+    <div class="g1-12 mt7 entrees">
+      <div class="entree duo" data-a>
+        <span class="idx">01</span>
+        <div class="corps">
+          <h3 class="h3">Déployer autre chose que ce qui a été testé</h3>
+          <p class="sm">Le serveur ne fait plus <code>git pull</code> ni <code>npm install</code> : il exécute une image immuable identifiée par l'empreinte du commit.</p>
+        </div>
+      </div>
+      <div class="entree duo" data-a>
+        <span class="idx">02</span>
+        <div class="corps">
+          <h3 class="h3">Rejouer la régression « heures supplémentaires »</h3>
+          <p class="sm">Commit <code>30e906c</code>, annulé après un incident P2. Un test le couvre désormais.</p>
+        </div>
+      </div>
+      <div class="entree duo" data-a>
+        <span class="idx">03</span>
+        <div class="corps">
+          <h3 class="h3">Recommiter un <code>.env</code> de production</h3>
+          <p class="sm">La fusion échoue, pas la production. Le <code>.env</code> d'origine est resté trois ans dans l'historique Git.</p>
+        </div>
+      </div>
+      <div class="entree duo" data-a>
+        <span class="idx">04</span>
+        <div class="corps">
+          <h3 class="h3">Un « staging » qui déploie la production</h3>
+          <p class="sm">Environnement réellement isolé, tests de fumée exécutés sur l'environnement déployé.</p>
+        </div>
+      </div>
+      <div class="entree duo" data-a>
+        <span class="idx">05</span>
+        <div class="corps">
+          <h3 class="h3">Le scénario du 14 août</h3>
+          <p class="sm">Plus de déploiement automatique, plus de migration par HTTP, retour arrière en deux minutes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 11 · PREUVES ══════════════════════════════════════════════════ -->
+  <section class="s" data-sec="Preuves">
+    <div class="g1-8" data-a>
+      <p class="lbl">Vérification — état réel du dépôt</p>
+      <h2 class="h2 mt4">Une correction sans preuve n'en est pas une</h2>
+    </div>
+
+    <div class="g1-5 mt7" data-a>
+      <p class="lbl">Couverture par service — seuil bloquant 80 %</p>
+      <div class="jauges mt4">
+        <div class="jauge"><span class="nom">shared</span><span class="piste seuil"><i style="--w:95%"></i></span><span class="val">95 %</span></div>
+        <div class="jauge"><span class="nom">api-gateway</span><span class="piste seuil"><i style="--w:100%"></i></span><span class="val">100 %</span></div>
+        <div class="jauge"><span class="nom">auth</span><span class="piste seuil"><i style="--w:99%"></i></span><span class="val">99 %</span></div>
+        <div class="jauge"><span class="nom">paie</span><span class="piste seuil"><i style="--w:98%"></i></span><span class="val">98 %</span></div>
+        <div class="jauge"><span class="nom">conges</span><span class="piste seuil"><i style="--w:99%"></i></span><span class="val">99 %</span></div>
+        <div class="jauge"><span class="nom">recrutement</span><span class="piste seuil"><i style="--w:96%"></i></span><span class="val">96 %</span></div>
+      </div>
+      <p class="sm mt4" style="font-size:.85rem">Le repère vertical marque le seuil de 80 %. Sous ce seuil, l'étape 2 échoue.</p>
+    </div>
+
+    <div class="g7-6 mt7" data-a>
+      <p class="lbl">Non-régression — motifs interdits, vérifiés à chaque fusion</p>
+      <div class="conformite mt4">
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:60ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-01</span><span>.env non suivi</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:110ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-02</span><span>aucune interpolation SQL</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:160ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-04</span><span>route de migration absente</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:210ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-05</span><span>aucune route de debug</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:260ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-06</span><span>middleware d'auth actif</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:310ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-09</span><span>aucun secret en repli</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:360ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-10</span><span>aucun secret journalisé</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:80ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-11</span><span>aucune origine générique</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:130ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-12</span><span>aucune trace exposée</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:180ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-15</span><span>aucun répertoire listé</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:230ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">SEC-18</span><span>aucun jeton persisté</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:280ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">INF-04</span><span>aucun mot de passe SSH</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:330ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">QUA-07</span><span>tests réellement exécutés</span></div>
+        <div class="conf"><svg viewBox="0 0 24 24" style="--dl:380ms"><path d="M4 12.5l5 5L20 6.5"/></svg><span class="code">QUA-08</span><span>dépendances verrouillées</span></div>
+      </div>
+    </div>
+
+    <div class="g1-12 mt7 bandeau">
+      <div class="metrique" data-a><span class="v" data-compte="235">0</span><span class="n">tests, tous verts</span></div>
+      <div class="metrique" data-a><span class="v" data-compte="0">0</span><span class="n">vulnérabilité de dépendance</span></div>
+      <div class="metrique" data-a><span class="v" data-compte="14">0</span><span class="n">vérifications de non-régression</span></div>
+      <div class="metrique" data-a><span class="v">100 %</span><span class="n">lint et formatage conformes</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ 12 · DONNÉES : AVANT / APRÈS ══════════════════════════════════ -->
+  <section class="s" data-sec="Résultats">
+    <div class="g1-6" data-a>
+      <p class="lbl">Objectifs Partech — conditions du second versement</p>
+      <h2 class="h2 mt4">Les chiffres qui décident<br>de 1,8 M€</h2>
+    </div>
+    <div class="g9-4" style="align-self:end" data-a>
+      <p class="sm">Échelle logarithmique — l'écart entre 2 h 28 et 90 secondes ne tient pas sur une échelle linéaire.</p>
+    </div>
+
+    <div class="g1-12 mt6 reduc">
+      <div class="mesure" data-a>
+        <div class="tete">
+          <span class="nom">Détection d'un incident P1</span>
+          <span class="gain">÷ 99</span>
+        </div>
+        <div class="axe">
+          <div class="rail"></div>
+          <div class="trace" style="left:14.2%; width:79.7%"></div>
+          <div class="obj" style="left:19.2%"><span>objectif 2 min</span></div>
+          <div class="pt a" style="left:93.9%"><span class="tip">2 h 28</span></div>
+          <div class="pt b" style="left:14.2%"><span class="tip">≈ 90 s</span></div>
+        </div>
+      </div>
+
+      <div class="mesure" data-a>
+        <div class="tete">
+          <span class="nom">Rétablissement du service</span>
+          <span class="gain">÷ 93</span>
+        </div>
+        <div class="axe">
+          <div class="rail"></div>
+          <div class="trace" style="left:19.2%; width:78.8%"></div>
+          <div class="obj" style="left:47.1%"><span>objectif 10 min</span></div>
+          <div class="pt a bord" style="left:98%"><span class="tip">3 h 07</span></div>
+          <div class="pt b" style="left:19.2%"><span class="tip">≈ 2 min</span></div>
+        </div>
+      </div>
+
+      <div class="mesure" data-a>
+        <div class="tete">
+          <span class="nom">Perte de données maximale</span>
+          <span class="gain">÷ 5</span>
+        </div>
+        <div class="axe">
+          <div class="rail"></div>
+          <div class="trace" style="left:54.2%; width:28.4%"></div>
+          <div class="obj" style="left:54.2%"><span>objectif 15 min</span></div>
+          <div class="pt a" style="left:82.6%"><span class="tip">1 h 17</span></div>
+          <div class="pt b" style="left:54.2%"><span class="tip">≤ 15 min</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="g1-12 apres-bord bandeau">
+      <div class="metrique" data-a>
+        <span class="v" style="color:var(--marque)">0 → 96 %</span>
+        <span class="n">Couverture de tests, minimum par service</span>
+      </div>
+      <div class="metrique" data-a>
+        <span class="v" style="color:var(--marque)">12 → 0</span>
+        <span class="n">Vulnérabilités critiques ouvertes</span>
+      </div>
+      <div class="metrique" data-a>
+        <span class="v" style="color:var(--eleve)">À exécuter</span>
+        <span class="n">Rotation des secrets : procédure écrite, accès production requis</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 13 · LIMITES ASSUMÉES ═════════════════════════════════════════ -->
+  <section class="s" data-sec="Honnêteté">
+    <div class="g1-7" data-a>
+      <p class="lbl">Périmètre</p>
+      <h2 class="h1 mt4">Ce que nous n'avons <b>pas</b> fait —<br>et pourquoi c'est un choix.</h2>
+    </div>
+
+    <div class="g1-12 mt7 entrees deux">
+      <div class="entree" data-a>
+        <span class="idx">i</span>
+        <div class="corps">
+          <h3 class="h3">Corriger le barème de cotisations</h3>
+          <p class="sm">Les taux sont annotés « approximatif » dans le code d'origine. Un défaut d'arrondi est technique — nous l'avons corrigé. Un taux réglementaire ne l'est pas : le modifier sans validation d'un expert-comptable remplacerait une erreur par une autre, avec la même apparence de justesse.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">ii</span>
+        <div class="corps">
+          <h3 class="h3">Émettre les bulletins à temps partiel</h3>
+          <p class="sm">Le barème ne les couvre pas. Nous <strong>refusons</strong> l'émission plutôt que de calculer faux : un bulletin non émis est un incident visible, un bulletin faux est un contentieux différé.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">iii</span>
+        <div class="corps">
+          <h3 class="h3">Migrer vers Kubernetes</h3>
+          <p class="sm">Cinq services, 8 200 utilisateurs, une équipe qui vient de perdre son unique expert. On adopte le modèle correspondant à la maturité réelle, pas au modèle idéal.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">iv</span>
+        <div class="corps">
+          <h3 class="h3">Trancher le sort des bulletins déjà émis</h3>
+          <p class="sm">Décision juridique et comptable. Nous la signalons ; elle ne nous appartient pas.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="g1-8 mt7" data-a>
+      <div class="marge">
+        Le post-mortem du 14 août listait cinq actions décidées. Dix jours plus tard, son auteur
+        écrivait : « Status : aucune action réalisée à ce jour ». Aucune n'avait de responsable
+        ni d'échéance.
+        <span class="src">C'est pourquoi chaque ligne de notre suivi renvoie à une preuve exécutable</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 14 · CONCLUSION ═══════════════════════════════════════════════ -->
+  <section class="s" data-sec="Conclusion">
+    <div class="g1-9" data-a>
+      <p class="lbl">Ce qui a réellement changé</p>
+      <h2 class="display mt5">La défaillance n'était<br>pas technique.<br><b>Elle était processuelle.</b></h2>
+    </div>
+
+    <div class="g1-7 mt6" data-a>
+      <p class="lede">
+        Aucun de ces problèmes n'est apparu par surprise. Tous étaient connus, documentés dans le
+        code par leurs propres auteurs — <code>// TODO: remettre après fix</code>,
+        <code>// à retirer</code>, <code>// jamais fait</code> — et repoussés. Rien, dans la chaîne,
+        n'empêchait de livrer du code défectueux.
+      </p>
+    </div>
+
+    <div class="g1-12 mt6 bascules">
+      <div class="bascule tete" data-a>
+        <span class="lbl">Avant l'audit</span><span></span><span class="lbl marque">Aujourd'hui</span>
+      </div>
+      <div class="bascule" data-a>
+        <span class="av">Un secret commité restait trois ans dans l'historique</span>
+        <span class="fl"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <span class="ap">La fusion échoue à l'étape 3</span>
+      </div>
+      <div class="bascule" data-a>
+        <span class="av">Un middleware d'authentification pouvait rester commenté six mois</span>
+        <span class="fl"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <span class="ap">Dix-sept tests échouent immédiatement</span>
+      </div>
+      <div class="bascule" data-a>
+        <span class="av">Une panne durait jusqu'au coup de fil d'un client</span>
+        <span class="fl"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <span class="ap">Alerte en 90 secondes, retour arrière en 2 minutes</span>
+      </div>
+    </div>
+
+    <div class="g2-6 mt6" data-a>
+      <p class="lede">
+        Le pipeline ne rend pas l'équipe plus disciplinée.<br>
+        <b>Il rend l'indiscipline visible immédiatement</b>, plutôt que dans un rapport d'audit
+        six mois plus tard.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══ 15 · ANTI-SÈCHE ═══════════════════════════════════════════════ -->
+  <section class="s" data-sec="Questions attendues">
+    <div class="g1-8" data-a>
+      <p class="lbl">Anti-sèche</p>
+      <h2 class="h2 mt4">Ce qu'on nous demandera</h2>
+    </div>
+
+    <div class="g1-12 mt6 entrees deux">
+      <div class="entree" data-a>
+        <span class="idx">Q1</span>
+        <div class="corps">
+          <h3 class="h3">Pourquoi supprimer <code>/paie/migrate</code> au lieu de la sécuriser ?</h3>
+          <p class="sm">Une migration de schéma n'est pas une fonctionnalité. Elle ne doit pas s'exécuter dans le processus qui sert le trafic, quel que soit le contrôle d'accès. <code>ADR-001</code></p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">Q2</span>
+        <div class="corps">
+          <h3 class="h3">Pourquoi cinq étapes et pas trois ?</h3>
+          <p class="sm">Chaque étape répond à un incident distinct. Fusionner deux étapes, c'est perdre la traçabilité de ce qu'on empêche.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">Q3</span>
+        <div class="corps">
+          <h3 class="h3">Le retour arrière annule-t-il les migrations ?</h3>
+          <p class="sm">Non — il ramène le code, pas les données. Les migrations sont donc écrites compatibles avec la version précédente. La restauration de données est une procédure distincte, à décision explicite.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">Q4</span>
+        <div class="corps">
+          <h3 class="h3">Pourquoi pas de cookie <code>httpOnly</code> tout de suite ?</h3>
+          <p class="sm">Il exige la protection CSRF et le partage de domaine. Travail justifié, mais qui ne doit pas retarder la fermeture d'une exposition au vol de jeton. <code>ADR-003</code></p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">Q5</span>
+        <div class="corps">
+          <h3 class="h3">Comment prouvez-vous le délai de détection ?</h3>
+          <p class="sm">Par une panne provoquée en recette : on coupe un service, on chronomètre l'alerte, on consigne. Une supervision jamais déclenchée est une hypothèse.</p>
+        </div>
+      </div>
+      <div class="entree" data-a>
+        <span class="idx">Q6</span>
+        <div class="corps">
+          <h3 class="h3">Qu'est-ce qui vous a le plus surpris ?</h3>
+          <p class="sm">Que le pipeline existant ne <em>pouvait pas</em> réussir : le frontend n'était pas constructible. Personne ne l'avait remarqué, parce que personne ne regardait les exécutions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 16 · CLÔTURE ══════════════════════════════════════════════════ -->
+  <section class="s" data-sec="Fin">
+    <div class="g1-8" data-a>
+      <p class="lbl">Merci</p>
+      <h2 class="display mt5">Questions.</h2>
+    </div>
+
+    <div class="g1-12 mt8" data-a>
+      <hr class="filet fort">
+    </div>
+
+    <div class="g1-12 mt5 ressources">
+      <div class="res" data-a>
+        <span class="p">docs/00-AUDIT-J1.md</span>
+        <span class="d">Rapport d'audit — 51 constats tracés, priorisés, localisés</span>
+      </div>
+      <div class="res" data-a>
+        <span class="p">docs/01-REMEDIATION.md</span>
+        <span class="d">Suivi — la preuve exécutable de chaque correctif</span>
+      </div>
+      <div class="res" data-a>
+        <span class="p">docs/RUNBOOK.md</span>
+        <span class="d">Exploitation — incident, retour arrière, restauration</span>
+      </div>
+      <div class="res" data-a>
+        <span class="p">docs/ADR.md</span>
+        <span class="d">Décisions — six choix structurants, y compris leurs coûts</span>
+      </div>
+      <div class="res" data-a>
+        <span class="p">.github/workflows/<wbr>pipeline.yml</span>
+        <span class="d">Pipeline — cinq étapes, quatre barrières bloquantes</span>
+      </div>
+      <div class="res" data-a>
+        <span class="p">docker compose up</span>
+        <span class="d">Démonstration — la pile complète en une commande</span>
+      </div>
+    </div>
+
+    <div class="g1-6 mt8" data-a>
+      <p class="lbl">NovaTech HRFlow — Équipe BB_NUMERIQUE</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pied">
+  <span class="folio"><b id="courante">01</b> / <span id="totale">16</span> &nbsp;·&nbsp; <span class="sec" id="nomSection"></span></span>
+  <nav class="segments" id="segments" aria-label="Navigation entre les diapositives"></nav>
+  <span class="fleches">
+    <button class="fleche" id="prec" aria-label="Diapositive précédente">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+    </button>
+    <button class="fleche" id="suiv" aria-label="Diapositive suivante">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </span>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var slides   = Array.prototype.slice.call(document.querySelectorAll('.s'));
+  var index    = 0;
+  var elNum    = document.getElementById('courante');
+  var elTot    = document.getElementById('totale');
+  var elSec    = document.getElementById('nomSection');
+  var elJauge  = document.getElementById('jauge-tete');
+  var elSegs   = document.getElementById('segments');
+  var sobre    = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  elTot.textContent = String(slides.length).padStart(2, '0');
+
+  /* — Segments de navigation : un par diapositive, cliquables. — */
+  slides.forEach(function (s, i) {
+    var b = document.createElement('button');
+    b.className = 'seg';
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Diapositive ' + (i + 1) + ' — ' + (s.dataset.sec || ''));
+    b.addEventListener('click', function () { montrer(i); });
+    elSegs.appendChild(b);
+  });
+  var segs = Array.prototype.slice.call(elSegs.children);
+
+  /* — Index de cascade : l'ordre du DOM détermine l'ordre d'apparition. — */
+  slides.forEach(function (s) {
+    Array.prototype.slice.call(s.querySelectorAll('[data-a]')).forEach(function (el, i) {
+      el.style.setProperty('--i', i);
+    });
+  });
+
+  /* — Compteurs : la valeur se construit, elle n'apparaît pas d'un bloc. — */
+  function compter(el) {
+    var cible = parseFloat(el.dataset.compte);
+    if (isNaN(cible)) return;
+    if (sobre) { el.textContent = cible.toLocaleString('fr-FR'); return; }
+
+    var duree = 760;
+    var debut = null;
+
+    function pas(t) {
+      if (debut === null) debut = t;
+      var p = Math.min((t - debut) / duree, 1);
+      var adouci = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(cible * adouci).toLocaleString('fr-FR');
+      if (p < 1) requestAnimationFrame(pas);
+    }
+    el.textContent = '0';
+    requestAnimationFrame(pas);
+  }
+
+  function montrer(n) {
+    index = Math.max(0, Math.min(slides.length - 1, n));
+
+    slides.forEach(function (s, i) {
+      var actif = i === index;
+      /* Retrait puis remise de la classe : les animations d'entrée et les
+         transitions de données se rejouent à chaque passage. */
+      if (actif) {
+        s.classList.remove('on');
+        void s.offsetWidth;
+        s.classList.add('on');
+      } else {
+        s.classList.remove('on');
+      }
+    });
+
+    segs.forEach(function (b, i) { b.setAttribute('aria-current', i === index ? 'true' : 'false'); });
+
+    var courante = slides[index];
+    elNum.textContent = String(index + 1).padStart(2, '0');
+    elSec.textContent = courante.dataset.sec || '';
+    elJauge.style.width = ((index + 1) / slides.length * 100) + '%';
+
+    /* Les compteurs démarrent après l'entrée du bloc qui les porte. */
+    var compteurs = courante.querySelectorAll('[data-compte]');
+    Array.prototype.forEach.call(compteurs, function (el, i) {
+      setTimeout(function () { compter(el); }, sobre ? 0 : 260 + i * 70);
+    });
+
+    window.scrollTo(0, 0);
+    if (location.hash !== '#' + (index + 1)) {
+      history.replaceState(null, '', '#' + (index + 1));
+    }
+  }
+
+  document.getElementById('suiv').addEventListener('click', function () { montrer(index + 1); });
+  document.getElementById('prec').addEventListener('click', function () { montrer(index - 1); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'PageDown': case ' ':
+        e.preventDefault(); montrer(index + 1); break;
+      case 'ArrowLeft': case 'PageUp':
+        e.preventDefault(); montrer(index - 1); break;
+      case 'Home': e.preventDefault(); montrer(0); break;
+      case 'End':  e.preventDefault(); montrer(slides.length - 1); break;
+    }
+  });
+
+  var depart = parseInt((location.hash || '').replace('#', ''), 10);
+  montrer(isNaN(depart) ? 0 : depart - 1);
+})();
+</script>
