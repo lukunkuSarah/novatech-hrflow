@@ -28,8 +28,8 @@ const { PayoutError } = require('./payouts')
 
 const ROLES_PAIE = ['rh', 'admin']
 
-function createPaieApp({ pool, config, logger, payouts }) {
-  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS })
+function createPaieApp({ pool, config, logger, payouts, metrics, drapeaux }) {
+  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS, metrics })
 
   app.use(
     healthRouter({
@@ -77,7 +77,10 @@ function createPaieApp({ pool, config, logger, payouts }) {
 
         const bulletin = calculerBulletin({
           salaireBrutMensuel: employe.salaire_mensuel_brut,
-          tauxActivite: Number(employe.taux_activite ?? 1)
+          tauxActivite: Number(employe.taux_activite ?? 1),
+          // Activation progressive par entreprise : le code est déployé pour
+          // tous, allumé pour ceux dont le barème a été validé (ADR-005).
+          autoriserTempsPartiel: Boolean(drapeaux && drapeaux.actif('paie.temps-partiel', { companyId }))
         })
 
         const donnees = { employeeId, mois, annee, periode, ...bulletin, generatedAt: new Date().toISOString() }

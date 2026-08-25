@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rapport de remédiation — NovaTech HRFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* ==========================================================================
+     Rapport de remédiation — feuille de style d'impression
+     Format A4, même identité que le support de soutenance.
+     ========================================================================== */
+  :root {
+    --papier: #FFFFFF;
+    --encre: #14161A;
+    --encre-2: #2A2F36;
+    --encre-3: #545A63;
+    --filet: #DEDED8;
+    --filet-2: #B8B8B0;
+    --marque: #4E2A84;
+    --crit: #A93A2E;
+    --ok: #2E7A58;
+    --eleve: #8A5A12;
+  }
+
+  @page { size: A4; margin: 18mm 16mm 20mm; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: Manrope, system-ui, sans-serif;
+    font-size: 10.2pt;
+    line-height: 1.55;
+    color: var(--encre);
+    background: var(--papier);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 { color: var(--marque); margin: 0; text-wrap: balance; }
+  h1 { font-size: 26pt; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
+  h2 {
+    font-size: 15pt; font-weight: 700; letter-spacing: -.02em;
+    margin: 22pt 0 8pt; padding-bottom: 4pt; border-bottom: 1.5pt solid var(--marque);
+    break-after: avoid;
+  }
+  h3 { font-size: 11.5pt; font-weight: 700; margin: 14pt 0 5pt; break-after: avoid; }
+  h4 { font-size: 10.2pt; font-weight: 700; color: var(--encre); margin: 10pt 0 3pt; break-after: avoid; }
+
+  p { margin: 0 0 7pt; }
+  strong { font-weight: 700; }
+  code, .mono { font-family: 'IBM Plex Mono', monospace; font-size: .88em; }
+
+  .lbl {
+    font-family: 'IBM Plex Mono', monospace; font-size: 7.5pt;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--encre-3);
+    margin: 0 0 4pt;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin: 8pt 0 12pt; font-size: 9pt; break-inside: avoid; }
+  th, td { text-align: left; padding: 4.5pt 6pt; border-bottom: .5pt solid var(--filet); vertical-align: top; }
+  th {
+    font-family: 'IBM Plex Mono', monospace; font-size: 7.5pt;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3);
+    font-weight: 500; background: #F6F6F3; border-bottom: 1pt solid var(--filet-2);
+  }
+  td.num { font-variant-numeric: tabular-nums; font-family: 'IBM Plex Mono', monospace; }
+  .crit { color: var(--crit); font-weight: 600; }
+  .ok { color: var(--ok); font-weight: 600; }
+  .eleve { color: var(--eleve); font-weight: 600; }
+
+  ul, ol { margin: 0 0 8pt; padding-left: 16pt; }
+  li { margin-bottom: 3pt; }
+
+  .encadre {
+    border-left: 2.5pt solid var(--marque); padding: 6pt 0 6pt 10pt;
+    margin: 10pt 0; background: #FAF8FD; break-inside: avoid;
+  }
+  .encadre p:last-child { margin-bottom: 0; }
+
+  .citation {
+    border-left: 2pt solid var(--filet-2); padding-left: 10pt;
+    font-style: italic; color: var(--encre-2); margin: 8pt 0;
+  }
+
+  .saut { break-before: page; }
+
+  /* --- Page de garde ------------------------------------------------------ */
+  .garde { height: 250mm; display: flex; flex-direction: column; break-after: page; }
+  .garde .haut { border-bottom: 1.5pt solid var(--encre); padding-bottom: 6pt; display: flex; justify-content: space-between; }
+  .garde .centre { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .garde h1 { font-size: 34pt; line-height: 1.02; }
+  .garde .sous { font-size: 13pt; font-weight: 300; color: var(--encre-2); margin-top: 10pt; max-width: 120mm; }
+  .garde .bas { border-top: 1pt solid var(--filet); padding-top: 8pt; }
+
+  .chiffres { display: flex; gap: 0; margin: 14pt 0; }
+  .chiffres > div { flex: 1; padding-right: 8pt; }
+  .chiffres .v { font-size: 21pt; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+  .chiffres .n { font-size: 8pt; color: var(--encre-3); margin-top: 3pt; }
+
+  .duo { display: flex; gap: 10pt; break-inside: avoid; }
+  .duo > * { flex: 1; }
+
+  pre {
+    font-family: 'IBM Plex Mono', monospace; font-size: 7.8pt; line-height: 1.5;
+    background: #F6F6F3; border: .5pt solid var(--filet); border-radius: 3pt;
+    padding: 6pt 8pt; overflow: hidden; white-space: pre-wrap; margin: 6pt 0;
+    break-inside: avoid;
+  }
+  pre.avant { border-left: 2pt solid var(--crit); }
+  pre.apres { border-left: 2pt solid var(--ok); }
+
+  .anglais { background: #F6F6F3; padding: 10pt 12pt; border-radius: 3pt; }
+  .anglais h2 { border-bottom-color: var(--encre); color: var(--encre); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ PAGE DE GARDE ═══════════════════════════════ -->
+<section class="garde">
+  <div class="haut">
+    <span class="lbl">NovaTech SAS — Confidentiel</span>
+    <span class="lbl">Équipe BB_NUMERIQUE</span>
+  </div>
+
+  <div class="centre">
+    <p class="lbl">Rapport de remédiation technique</p>
+    <h1>Un système qui n'était<br>pas fragile.<br>Il était ouvert.</h1>
+    <p class="sous">
+      Plateforme RH HRFlow — remédiation conduite à la suite de l'incident P1
+      du 14 août 2024 et de l'audit Partech du 18 septembre 2024.
+    </p>
+
+    <div class="chiffres">
+      <div><div class="v">51</div><div class="n">constats d'audit</div></div>
+      <div><div class="v">12</div><div class="n">critiques, tous fermés</div></div>
+      <div><div class="v">279</div><div class="n">tests automatisés</div></div>
+      <div><div class="v">5</div><div class="n">étapes de pipeline</div></div>
+      <div><div class="v">1,8 M€</div><div class="n">conditionnés à ce travail</div></div>
+    </div>
+  </div>
+
+  <div class="bas">
+    <table style="margin:0">
+      <tr><td style="width:32%"><strong>Commanditaire</strong></td><td>NovaTech SAS — Karim Bouaziz, directeur général</td></tr>
+      <tr><td><strong>Destinataire</strong></td><td>Partech Ventures — contre-audit du second versement</td></tr>
+      <tr><td><strong>Périmètre</strong></td><td>Dépôt <code>novatech-hrflow</code> — 5 services, 1 frontend, chaîne de livraison, infrastructure</td></tr>
+      <tr><td><strong>Bloc de compétences</strong></td><td>BC03 — RNCP 38822, niveau 7</td></tr>
+      <tr style="border-bottom:none"><td><strong>Dépôt</strong></td><td><code>github.com/lukunkuSarah/novatech-hrflow</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SYNTHÈSE ════════════════════════════════════ -->
+<h2>Synthèse</h2>
+
+<p>
+  L'audit technique commandé par Partech décrivait une dette accumulée depuis 2021.
+  Notre propre audit, conduit sans reprendre la liste existante, aboutit à un
+  constat plus direct : <strong>HRFlow n'était pas un système fragile, c'était un
+  système ouvert</strong>.
+</p>
+
+<p>
+  À la date de la reprise, un attaquant sans compte, sans outil et sans
+  connaissance préalable pouvait, en moins de dix minutes, lire l'intégralité des
+  données RH de tous les clients, prendre le contrôle de n'importe quel compte,
+  provoquer une coupure totale de la plateforme et forger des jetons
+  d'authentification valides. Ces quatre expositions ne relevaient pas de la
+  dette technique : c'étaient des vulnérabilités actives.
+</p>
+
+<div class="encadre">
+  <p>
+    <strong>Ce rapport documente 51 constats, dont 12 que l'audit externe n'avait
+    pas relevés.</strong> Trois d'entre eux invalident des correctifs que l'on
+    serait tenté d'appliquer en confiance : réactiver les tests, s'appuyer sur le
+    build existant, déployer d'abord en environnement de recette.
+  </p>
+</div>
+
+<h3>Résultat en quatre chiffres</h3>
+
+<table>
+  <thead><tr><th>Indicateur</th><th>14 août 2024</th><th>Objectif Partech</th><th>Aujourd'hui</th></tr></thead>
+  <tbody>
+    <tr><td>Détection d'un incident P1</td><td class="num crit">2 h 28</td><td class="num">&lt; 2 min</td><td class="num ok">≈ 90 s</td></tr>
+    <tr><td>Rétablissement du service</td><td class="num crit">3 h 07</td><td class="num">&lt; 10 min</td><td class="num ok">≈ 2 min</td></tr>
+    <tr><td>Perte de données maximale</td><td class="num crit">1 h 17</td><td class="num">&lt; 15 min</td><td class="num ok">≤ 15 min</td></tr>
+    <tr><td>Couverture de tests</td><td class="num crit">0 %</td><td class="num">≥ 80 %</td><td class="num ok">95–100 %</td></tr>
+    <tr><td>Vulnérabilités critiques ouvertes</td><td class="num crit">12</td><td class="num">0</td><td class="num ok">0</td></tr>
+    <tr><td>Vulnérabilités de dépendances</td><td class="num crit">6</td><td class="num">0</td><td class="num ok">0</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Un point reste ouvert et nous le signalons sans le minimiser : <span class="eleve">la
+  rotation effective des secrets de production</span> exige des accès dont une
+  équipe de développement ne dispose pas. La procédure est écrite ; son exécution
+  appartient à la direction technique.
+</p>
+
+<!-- ═══════════════════════ AUDIT ═══════════════════════════════════════ -->
+<h2 class="saut">1 · L'audit : méthode et résultats</h2>
+
+<h3>1.1 Une relecture menée à froid</h3>
+
+<p>
+  L'audit a été conduit en quatre passes volontairement séparées. La deuxième est
+  la seule qui compte vraiment : <strong>100 % des fichiers relus ligne à ligne,
+  sans la liste Partech sous les yeux.</strong> C'est elle qui a produit les
+  douze constats supplémentaires. Se contenter de confirmer une liste existante
+  aurait donné un rapport plus rapide et strictement inutile.
+</p>
+
+<p>
+  Les commentaires laissés dans le code — <code>// TODO</code>,
+  <code>// à retirer</code>, <code>// jamais fait</code> — ont été traités comme
+  des indices, jamais comme des preuves. Les problèmes les plus graves ne
+  portaient aucun commentaire : personne, dans l'équipe précédente, n'en avait
+  conscience.
+</p>
+
+<h3>1.2 Répartition des 51 constats</h3>
+
+<table>
+  <thead><tr><th>Gravité</th><th>Nombre</th><th>Définition retenue</th></tr></thead>
+  <tbody>
+    <tr><td class="crit">Critique</td><td class="num">12</td><td>exploitable immédiatement, sans authentification, impact majeur</td></tr>
+    <tr><td class="eleve">Élevé</td><td class="num">21</td><td>exploitable sous condition, ou impact structurel</td></tr>
+    <tr><td>Moyen</td><td class="num">17</td><td>défaut avéré sans exploitation directe</td></tr>
+    <tr><td>Faible</td><td class="num">1</td><td>gêne opérationnelle</td></tr>
+  </tbody>
+</table>
+
+<h3>1.3 Les douze constats absents de l'audit externe</h3>
+
+<table>
+  <thead><tr><th>ID</th><th>Constat</th><th>Pourquoi il compte</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">QUA-07</td><td><code>npm test</code> exécutait <code>echo &amp;&amp; exit 0</code></td><td>Réactiver les tests dans le pipeline n'aurait rien changé : la barrière serait restée verte quoi qu'il arrive.</td></tr>
+    <tr><td class="mono">QUA-09</td><td>Le frontend n'était pas constructible</td><td>L'étape « build » ne pouvait pas réussir. Elle était décorative.</td></tr>
+    <tr><td class="mono">INF-05</td><td><code>deploy.sh staging</code> déployait la production</td><td>Le script lisait l'argument d'environnement et ne s'en servait jamais.</td></tr>
+    <tr><td class="mono">SEC-03</td><td>Prise de contrôle de compte sans jeton</td><td>Plus grave que l'injection SQL : ne demande aucune compétence technique.</td></tr>
+    <tr><td class="mono">SEC-07</td><td>Téléversement non contrôlé, traversée de répertoire</td><td>Dépôt de fichier arbitraire sur le serveur de production.</td></tr>
+    <tr><td class="mono">SEC-08</td><td>Aucun cloisonnement multi-locataire</td><td>Défaut d'architecture, invisible ligne par ligne.</td></tr>
+    <tr><td class="mono">SEC-13</td><td>Aucune limitation de débit sur l'authentification</td><td>Force brute triviale, même après correction de l'injection SQL.</td></tr>
+    <tr><td class="mono">QUA-01</td><td>Aucun <code>try/catch</code> sur les routes asynchrones</td><td>Déni de service par une requête unique, sur les cinq services.</td></tr>
+    <tr><td class="mono">QUA-02</td><td>Calcul de paie erroné</td><td>Le risque n'est pas l'absence de test : ce sont les bulletins déjà émis.</td></tr>
+    <tr><td class="mono">QUA-03</td><td>Virements sans clé d'idempotence</td><td>Un rejeu paie deux fois le même salarié.</td></tr>
+    <tr><td class="mono">QUA-05</td><td>Solde de congés augmentable par dates inversées</td><td>Fraude exploitable par tout salarié, sans outil.</td></tr>
+    <tr><td class="mono">SEC-18/19/21</td><td>Chaîne d'authentification côté navigateur</td><td>Reste cassée même après correction du backend.</td></tr>
+  </tbody>
+</table>
+
+<h3>1.4 Deux exemples représentatifs</h3>
+
+<h4>La fraude aux congés — une ligne, trois défauts</h4>
+
+<pre class="avant">const nombreJours = Math.ceil(
+  (new Date(dateFin) - new Date(dateDebut)) / (1000 * 60 * 60 * 24)
+)</pre>
+
+<p>
+  Des dates inversées produisent une valeur <strong>négative</strong>, qui vient
+  <em>augmenter</em> le solde du salarié. Les week-ends et jours fériés sont
+  décomptés comme ouvrés. La borne finale est exclue, donc un congé d'une journée
+  vaut zéro jour. Corrigé à trois niveaux : domaine, application, et contrainte
+  de base — <code>CHECK (date_fin &gt;= date_debut)</code>, parce qu'une
+  contrainte de base ne se commente pas « temporairement ».
+</p>
+
+<h4>La prise de contrôle de compte — le défaut était une absence</h4>
+
+<pre class="avant">app.post('/auth/reset-password', async (req, res) =&gt; {
+  const { email } = req.body
+  // aucun jeton, aucune vérification de propriété
+  const newPassword = Math.random().toString(36).slice(-8)
+  await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [hash, email])
+  console.log(`[RESET] New password for ${email}: ${newPassword}`)
+})</pre>
+
+<p>
+  La route réinitialisait le mot de passe de <strong>n'importe quelle adresse
+  fournie</strong>, sans preuve de possession, et l'écrivait en clair dans un
+  journal que Nginx servait publiquement sur <code>/logs/</code>. Deux
+  vulnérabilités qui se composent : la seconde transformait la première en
+  compromission silencieuse.
+</p>
+
+<!-- ═══════════════════════ DÉCISIONS ═══════════════════════════════════ -->
+<h2 class="saut">2 · Les décisions structurantes</h2>
+
+<p>
+  Huit décisions sont consignées dans <code>docs/ADR.md</code> avec leur contexte
+  et leurs conséquences, y compris négatives. Les cinq qui engagent le plus :
+</p>
+
+<h3>ADR-001 — Supprimer les routes dangereuses plutôt que les sécuriser</h3>
+<p>
+  L'audit externe recommandait de « sécuriser ou supprimer » la route de
+  migration. Nous avons supprimé. Une migration de schéma n'est pas une
+  fonctionnalité de l'application : elle ne doit pas s'exécuter dans le processus
+  qui sert le trafic, quel que soit le contrôle d'accès exigé pour la déclencher.
+  Une route de debug protégée reste une route de debug — sa protection est ce
+  qu'on oublie de vérifier.
+</p>
+
+<h3>ADR-002 — Refuser de démarrer plutôt qu'appliquer une valeur par défaut</h3>
+<p>
+  Le code contenait <code>process.env.JWT_SECRET || 'novatech_jwt_super_secret_key_…'</code>.
+  Ces valeurs de repli permettent à un service de démarrer dans un environnement
+  mal configuré. C'est précisément le problème : il démarre, il paraît
+  fonctionner, et il signe des jetons avec un secret public. Un service dont la
+  configuration est incomplète refuse désormais de démarrer.
+</p>
+
+<h3>ADR-004 — Aucune action tierce dans le pipeline</h3>
+<p>
+  Le pipeline audité utilisait <code>appleboy/ssh-action@master</code> : une
+  référence <em>mutable</em>, dont le code s'exécutait automatiquement avec les
+  identifiants de production. Le fichier de workflow est plus verbeux
+  aujourd'hui — le déploiement SSH est écrit à la main — mais il est auditable.
+</p>
+
+<h3>ADR-005 — Reprendre le barème de paie à l'identique</h3>
+<p>
+  Les taux de cotisation étaient annotés « approximatif » et « à vérifier avec le
+  comptable ». Nous avons corrigé ce qui relève de la technique — arrondis au
+  centime en arithmétique entière, idempotence, transactions — et repris les taux
+  <strong>sans y toucher</strong>. Corriger un taux réglementaire sans validation
+  d'un expert-comptable remplacerait une erreur par une autre, avec la même
+  apparence de justesse.
+</p>
+
+<h3>ADR-007 — Des drapeaux en configuration, pas un service externe</h3>
+<p>
+  Le temps partiel n'est pas couvert par le barème : plutôt que d'émettre un
+  bulletin faux, le service refuse. La fonctionnalité est déployée mais éteinte,
+  et s'activera entreprise par entreprise une fois le barème validé. Un bulletin
+  non émis est un incident visible ; un bulletin faux est un contentieux différé.
+</p>
+
+<!-- ═══════════════════════ MÉTRIQUES ═══════════════════════════════════ -->
+<h2 class="saut">3 · Métriques et preuves</h2>
+
+<h3>3.1 Couverture de tests</h3>
+
+<table>
+  <thead><tr><th>Périmètre</th><th>Tests</th><th>Instructions</th><th>Branches</th><th>Fonctions</th><th>Lignes</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">shared</td><td class="num">93</td><td class="num">95,4 %</td><td class="num">80,0 %</td><td class="num">97,4 %</td><td class="num">97,2 %</td></tr>
+    <tr><td class="mono">api-gateway</td><td class="num">23</td><td class="num">100 %</td><td class="num">82,4 %</td><td class="num">100 %</td><td class="num">100 %</td></tr>
+    <tr><td class="mono">auth</td><td class="num">34</td><td class="num">99,0 %</td><td class="num">100 %</td><td class="num">93,8 %</td><td class="num">99,0 %</td></tr>
+    <tr><td class="mono">paie</td><td class="num">47</td><td class="num">98,3 %</td><td class="num">95,9 %</td><td class="num">100 %</td><td class="num">100 %</td></tr>
+    <tr><td class="mono">conges</td><td class="num">38</td><td class="num">99,1 %</td><td class="num">89,5 %</td><td class="num">93,3 %</td><td class="num">99,0 %</td></tr>
+    <tr><td class="mono">recrutement</td><td class="num">33</td><td class="num">96,0 %</td><td class="num">83,3 %</td><td class="num">100 %</td><td class="num">95,7 %</td></tr>
+    <tr><td class="mono">frontend</td><td class="num">3 + 8 E2E</td><td colspan="4">parcours navigateur, Chromium</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Le seuil de 80 % est <strong>bloquant</strong> et déclaré par service. Une part
+  importante de ces tests ne vérifie pas une fonctionnalité mais
+  <strong>l'absence d'une vulnérabilité</strong> : que <code>/paie/migrate</code>
+  réponde 404, qu'un jeton <code>alg: none</code> soit refusé, qu'aucun secret ne
+  puisse être journalisé.
+</p>
+
+<div class="encadre">
+  <p>
+    <strong>Un test a détecté un défaut réel introduit pendant la remédiation.</strong>
+    La passerelle retirait le préfixe de montage et transmettait
+    <code>/solde/10</code> au lieu de <code>/conges/solde/10</code>. Le test
+    d'intégration de la passerelle l'a signalé avant toute mise en service. C'est
+    la démonstration la plus concrète de ce qu'apporte la barrière.
+  </p>
+</div>
+
+<h3>3.2 Chaîne de livraison</h3>
+
+<table>
+  <thead><tr><th>Étape</th><th>Contenu</th><th>Ce qu'elle rend impossible</th></tr></thead>
+  <tbody>
+    <tr><td><strong>1 · Build</strong></td><td><code>npm ci</code>, lint, format, image immuable taguée par empreinte de commit</td><td>Déployer autre chose que ce qui a été testé</td></tr>
+    <tr><td><strong>2 · Test</strong></td><td>279 tests, couverture ≥ 80 %, 8 parcours E2E</td><td>Rejouer la régression « heures supplémentaires » du commit <code>30e906c</code></td></tr>
+    <tr><td><strong>3 · Security</strong></td><td>gitleaks, <code>npm audit</code>, Trivy, 14 contrôles de motifs interdits</td><td>Recommiter un <code>.env</code> de production</td></tr>
+    <tr><td><strong>4 · Staging</strong></td><td>environnement isolé, migrations hors trafic, tests de fumée</td><td>Un « staging » qui déploie la production</td></tr>
+    <tr><td><strong>5 · Production</strong></td><td>approbation humaine, bascule sans interruption, retour arrière automatique</td><td>Le scénario du 14 août</td></tr>
+  </tbody>
+</table>
+
+<h3>3.3 Supervision — les quatre signaux d'or</h3>
+
+<p>
+  Le système audité n'exposait aucune métrique. Sa seule sonde répondait
+  <code>200 OK</code> en toutes circonstances : une supervision branchée dessus
+  serait restée verte pendant les 3 h 07 de l'incident.
+</p>
+
+<table>
+  <thead><tr><th>Signal</th><th>Métrique</th><th>Seuil d'alerte</th></tr></thead>
+  <tbody>
+    <tr><td>Latence</td><td><code>hrflow_duree_requete_secondes</code> — centiles 50/95/99</td><td>p95 &gt; 2 s pendant 5 min</td></tr>
+    <tr><td>Trafic</td><td><code>hrflow_requetes_total</code> par service et par route</td><td>—</td></tr>
+    <tr><td>Erreurs</td><td>part des réponses 5xx</td><td>&gt; 1 %</td></tr>
+    <tr><td>Saturation</td><td>mémoire, CPU, retard de boucle d'événements</td><td>mémoire &gt; 192 Mo sur 256</td></tr>
+  </tbody>
+</table>
+
+<p>
+  <strong>Un histogramme, pas une moyenne.</strong> Une réponse sur cent à trois
+  secondes ne déplace pas la moyenne, mais c'est celle que l'utilisateur
+  remarque. <strong>Les routes sont normalisées en gabarits</strong> :
+  sans quoi 8 200 salariés produiraient 8 200 séries temporelles.
+</p>
+
+<!-- ═══════════════════════ POST-MORTEM ═════════════════════════════════ -->
+<h2 class="saut">4 · Post-mortem de l'incident P1 du 14 août 2024</h2>
+
+<p class="lbl">Relecture par l'équipe entrante — complète le post-mortem rédigé le 16 août par la direction générale</p>
+
+<h3>4.1 Chronologie</h3>
+
+<table>
+  <thead><tr><th>Heure</th><th>Événement</th><th>Ce que le système aurait dû faire</th></tr></thead>
+  <tbody>
+    <tr><td class="num">23:30</td><td>Migration SQL lancée en production via <code>POST /paie/migrate</code></td><td>Refuser : la route ne devrait pas exister</td></tr>
+    <tr><td class="num">23:47</td><td>La table <code>employees</code> est corrompue, la plateforme tombe</td><td>Alerter dans les 90 secondes</td></tr>
+    <tr><td class="num crit">— 2 h 28 —</td><td class="crit">Aucune alerte. Aucun tableau de bord. La sonde répondait 200.</td><td>—</td></tr>
+    <tr><td class="num">02:15</td><td>Un client d'hôtel appelle le numéro d'urgence</td><td>L'astreinte aurait dû être en action depuis 2 h 26</td></tr>
+    <tr><td class="num">02:25</td><td>Tentative de retour arrière — aucune procédure documentée</td><td>Retour arrière scripté, ≈ 2 min</td></tr>
+    <tr><td class="num">02:54</td><td>Restauration d'une sauvegarde de 22 h 30 — 1 h 17 perdues</td><td>Sauvegarde horaire vérifiée, ≤ 15 min</td></tr>
+  </tbody>
+</table>
+
+<h3>4.2 Causes racines — notre lecture</h3>
+
+<p>
+  Le post-mortem d'origine identifie cinq causes techniques. Elles sont exactes,
+  mais elles décrivent des symptômes. La cause commune est ailleurs.
+</p>
+
+<div class="encadre">
+  <p>
+    <strong>Aucun de ces problèmes n'est apparu par surprise.</strong> Tous
+    étaient connus, documentés dans le code <em>par leurs propres auteurs</em>, et
+    repoussés. Le middleware d'authentification portait
+    <code>// TODO: remettre après fix</code> depuis mars 2024. La route de debug
+    portait <code>// à retirer</code> depuis juillet. Le <code>.gitignore</code>
+    portait <code>// TODO : à corriger — Théo 14/08/2024 (jamais fait)</code>.
+  </p>
+  <p>
+    La défaillance n'est pas technique, elle est <strong>processuelle</strong> :
+    rien, dans la chaîne de livraison, n'empêchait de livrer du code défectueux.
+  </p>
+</div>
+
+<h3>4.3 Ce que le post-mortem d'origine ne dit pas</h3>
+
+<p>
+  Il liste cinq actions décidées. Dix jours plus tard, son auteur écrivait :
+  <em>« Status : aucune action réalisée à ce jour. »</em> Aucune de ces cinq
+  actions ne portait de responsable ni d'échéance.
+</p>
+
+<p class="citation">
+  Une action corrective sans responsable ni date n'est pas une action corrective.
+  C'est pourquoi chaque ligne de notre suivi de remédiation renvoie à une preuve
+  exécutable — un test qui échoue si la vulnérabilité se rouvre, ou une
+  vérification que le pipeline applique à chaque demande de fusion.
+</p>
+
+<h3>4.4 Le même scénario, aujourd'hui</h3>
+
+<table>
+  <thead><tr><th>Étape du 14 août</th><th>Aujourd'hui</th></tr></thead>
+  <tbody>
+    <tr><td>Appel de <code>POST /paie/migrate</code></td><td>404 — la route n'existe plus, et deux tests le vérifient</td></tr>
+    <tr><td>Migration exécutée dans le processus de production</td><td>Conteneur éphémère, hors trafic, après sauvegarde vérifiée</td></tr>
+    <tr><td><code>UPDATE employees</code> sans clause <code>WHERE</code></td><td>Supprimé de la migration — il n'apportait rien</td></tr>
+    <tr><td>Panne non détectée pendant 2 h 28</td><td>Alerte à l'astreinte en ≈ 90 s</td></tr>
+    <tr><td>Retour arrière improvisé</td><td><code>scripts/rollback.sh</code>, images déjà présentes, ≈ 2 min</td></tr>
+    <tr><td>Sauvegarde de 1 h 17</td><td>Sauvegarde avant chaque déploiement, plus horaire, intégrité vérifiée</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════ RESTE À FAIRE ═══════════════════════════════ -->
+<h2 class="saut">5 · Ce qui reste ouvert</h2>
+
+<p>
+  Un rapport crédible énonce aussi ses limites. Ces points ne sont pas des
+  oublis : ce sont des décisions qui n'appartiennent pas à l'équipe technique, ou
+  des actes qui exigent des accès dont un dépôt de code ne dispose pas.
+</p>
+
+<table>
+  <thead><tr><th>Sujet</th><th>Nature</th><th>Décideur</th></tr></thead>
+  <tbody>
+    <tr><td>Rotation effective des secrets de production</td><td>opérationnel — exige les accès de production</td><td>direction technique</td></tr>
+    <tr><td>Validation du barème de cotisations</td><td>comptable et juridique</td><td>expert-comptable</td></tr>
+    <tr><td>Sort des bulletins déjà émis avec un calcul erroné</td><td>juridique</td><td>direction générale</td></tr>
+    <tr><td>Protection de branche, relecteurs obligatoires</td><td>configuration de la forge</td><td>administrateur du dépôt</td></tr>
+    <tr><td>Certificats TLS, empreintes d'hôtes</td><td>opérationnel</td><td>administrateur système</td></tr>
+    <tr><td>Infrastructure cloud provisionnée</td><td>exige un compte et un budget</td><td>direction technique</td></tr>
+  </tbody>
+</table>
+
+<h3>Sur l'historique Git</h3>
+
+<p>
+  Les secrets d'origine étaient présents dans les premiers commits. Lors de la
+  publication du dépôt, <strong>la protection de secrets de GitHub a refusé le
+  push</strong> en détectant la clé Stripe — confirmation indépendante du constat
+  SEC-01. L'historique a été purgé conformément à notre propre plan : le
+  <code>.env</code> est retiré des 37 commits et les onze valeurs de secrets sont
+  remplacées, sans effacer le code vulnérable d'origine, qui reste consultable.
+</p>
+
+<p>
+  <strong>Cela ne dispense pas de la révocation.</strong> Un secret publié est un
+  secret compromis, même retiré : la purge traite la trace, pas l'exposition
+  passée.
+</p>
+
+<!-- ═══════════════════════ ENGLISH SUMMARY ═════════════════════════════ -->
+<section class="saut anglais">
+<h2>Executive summary <span style="font-weight:400;font-size:11pt;color:#545A63">— English</span></h2>
+
+<p>
+  <strong>Context.</strong> NovaTech's HRFlow is a SaaS HR platform serving 8,200
+  users across 47 client companies, under a 99.5 % monthly availability
+  commitment. A three-hour outage on 14 August 2024, followed by a technical
+  audit commissioned by Partech Ventures, froze €1.8 M of a funding round pending
+  a credible remediation plan.
+</p>
+
+<p>
+  <strong>What we found.</strong> Our own audit — deliberately conducted without
+  the external report at hand — recorded <strong>51 findings, 12 of which the
+  external audit had missed</strong>. The system was not fragile; it was open. An
+  unauthenticated attacker could read every client's HR data, take over any
+  account, bring the platform down, and forge valid authentication tokens.
+</p>
+
+<p>
+  Three of the twelve additional findings invalidate remediations one would
+  otherwise apply in good faith: the root <code>npm test</code> script returned
+  success unconditionally, so re-enabling the test gate would have changed
+  nothing; the frontend could not be built, so the pipeline's build stage was
+  decorative; and the deployment script accepted an environment argument it never
+  used, meaning <code>deploy.sh staging</code> deployed production.
+</p>
+
+<h3>Outcome</h3>
+
+<table>
+  <thead><tr><th>Metric</th><th>14 Aug 2024</th><th>Target</th><th>Now</th></tr></thead>
+  <tbody>
+    <tr><td>Time to detect (MTTD)</td><td class="num crit">2 h 28</td><td class="num">&lt; 2 min</td><td class="num ok">≈ 90 s</td></tr>
+    <tr><td>Time to recover (MTTR)</td><td class="num crit">3 h 07</td><td class="num">&lt; 10 min</td><td class="num ok">≈ 2 min</td></tr>
+    <tr><td>Recovery point (RPO)</td><td class="num crit">1 h 17</td><td class="num">&lt; 15 min</td><td class="num ok">≤ 15 min</td></tr>
+    <tr><td>Test coverage</td><td class="num crit">0 %</td><td class="num">≥ 80 %</td><td class="num ok">95–100 %</td></tr>
+    <tr><td>Open critical vulnerabilities</td><td class="num crit">12</td><td class="num">0</td><td class="num ok">0</td></tr>
+  </tbody>
+</table>
+
+<h3>How it was done</h3>
+
+<ul>
+  <li><strong>A five-stage pipeline</strong> — build, test, security, staging,
+    production — where four stages block the merge. Each gate closes an incident
+    that has <em>already happened</em>; none is theoretical.</li>
+  <li><strong>279 automated tests</strong>, a large share of which assert the
+    <em>absence</em> of a vulnerability rather than the presence of a feature.</li>
+  <li><strong>Immutable container images</strong> tagged by commit hash. The
+    server no longer runs <code>git pull</code> and rebuilds: what is tested is
+    exactly what runs.</li>
+  <li><strong>Honest health probes.</strong> The previous endpoint returned
+    <code>200 OK</code> unconditionally — monitoring wired to it would have
+    stayed green throughout the outage.</li>
+  <li><strong>Scripted, tested rollback</strong> in roughly two minutes. The
+    August outage lasted three hours not because of the migration, but because
+    nobody knew how to undo it.</li>
+</ul>
+
+<h3>What we deliberately did not do</h3>
+
+<p>
+  We did not correct the payroll contribution rates. They are wrong, and we say
+  so — but changing a statutory rate without a chartered accountant's validation
+  would replace one error with another, wearing the same appearance of
+  correctness. Part-time payslips are therefore <em>refused</em> rather than
+  computed: an unissued payslip is a visible incident, an incorrect one is a
+  deferred dispute.
+</p>
+
+<p>
+  We did not migrate to Kubernetes. Five services, 8,200 users, and a team that
+  has just lost its only expert: the added operational complexity would outweigh
+  the benefit. We adopted the model matching actual maturity, not the ideal one.
+</p>
+
+<p>
+  <strong>Secret rotation remains outstanding.</strong> The procedure is written;
+  execution requires production credentials a development team does not hold.
+  Notably, GitHub's own push protection <em>rejected</em> our first push after
+  detecting the Stripe key in history — an independent confirmation of finding
+  SEC-01.
+</p>
+
+<div class="encadre">
+  <p>
+    <strong>The core insight.</strong> None of these problems appeared by
+    surprise. Every one was known, documented in the code by its own authors, and
+    postponed. The failure was not technical but procedural: nothing in the
+    delivery chain prevented defective code from shipping. The pipeline does not
+    make the team more disciplined — it makes indiscipline visible immediately,
+    rather than in an audit report six months later.
+  </p>
+</div>
+</section>
+
+<!-- ═══════════════════════ ANNEXE ══════════════════════════════════════ -->
+<h2 class="saut">Annexe — Où trouver quoi</h2>
+
+<table>
+  <thead><tr><th>Document</th><th>Contenu</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">docs/00-AUDIT-J1.md</td><td>Rapport d'audit — 51 constats tracés, priorisés, localisés au fichier et à la ligne</td></tr>
+    <tr><td class="mono">docs/01-REMEDIATION.md</td><td>Suivi — la preuve exécutable de chaque correctif, constat par constat</td></tr>
+    <tr><td class="mono">docs/PLAN-DE-TESTS.md</td><td>Stratégie de test, matrice de couverture, traçabilité constat → test</td></tr>
+    <tr><td class="mono">docs/architecture.md</td><td>Architecture, modèle de données, choix assumés</td></tr>
+    <tr><td class="mono">docs/RUNBOOK.md</td><td>Procédures d'incident, retour arrière, restauration, obligations RGPD</td></tr>
+    <tr><td class="mono">docs/MONITORING.md</td><td>Supervision, quatre signaux d'or, routage des alertes, astreinte</td></tr>
+    <tr><td class="mono">docs/ADR.md</td><td>Huit décisions d'architecture, avec leurs coûts</td></tr>
+    <tr><td class="mono">docs/openapi.yaml</td><td>Contrats d'interface des 16 routes</td></tr>
+    <tr><td class="mono">docs/soutenance/index.html</td><td>Support de soutenance — 16 compositions</td></tr>
+    <tr><td class="mono">.github/workflows/pipeline.yml</td><td>Pipeline en cinq étapes</td></tr>
+    <tr><td class="mono">monitoring/</td><td>Prometheus, Alertmanager, tableau de bord Grafana provisionné</td></tr>
+  </tbody>
+</table>
+
+<p style="margin-top:18pt;border-top:1pt solid var(--filet);padding-top:8pt" class="lbl">
+  Rapport de remédiation — Équipe BB_NUMERIQUE — NovaTech HRFlow — Document interne
+</p>
+
+</body>
+</html>

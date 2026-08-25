@@ -105,7 +105,90 @@ d'alerte, en plus coûteuse.
 
 ---
 
-## 4. Journalisation
+## 4. Les quatre signaux d'or
+
+Le système audité n'exposait **aucune métrique**. La seule information
+disponible était une sonde qui répondait 200 en toutes circonstances : il était
+impossible de savoir si la plateforme ralentissait, si le taux d'erreur montait
+ou si un service saturait.
+
+Chaque service expose désormais `/metrics` (voir `services/shared/src/metriques.js`).
+
+| Signal | Métrique | Ce qu'elle révèle |
+|---|---|---|
+| **Latence** | `hrflow_duree_requete_secondes` | histogramme, centiles 50 / 95 / 99 par route |
+| **Trafic** | `hrflow_requetes_total` | requêtes par seconde, par service et par route |
+| **Erreurs** | `hrflow_requetes_total{statut=~"5.."}` | part des réponses en échec |
+| **Saturation** | `nodejs_process_*`, `nodejs_nodejs_eventloop_*` | CPU, mémoire résidente, retard de la boucle d'événements |
+
+**Un histogramme, pas une moyenne.** Une moyenne de latence masque exactement ce
+qu'on cherche : une réponse sur cent à trois secondes ne la déplace pas, mais
+c'est celle que l'utilisateur remarque.
+
+**Les routes sont normalisées en gabarits.** `/conges/solde/10` et
+`/conges/solde/11` alimentent une seule série `/conges/solde/:employeeId`. Sans
+cette normalisation, 8 200 salariés produiraient 8 200 séries.
+
+**`/metrics` n'est jamais public** : Nginx le restreint au réseau de
+supervision, au même titre que la sonde de disponibilité.
+
+Deux compteurs métier complètent l'ensemble, parce que deux alertes en dépendent :
+`hrflow_connexions_echouees_total` (force brute) et
+`hrflow_bulletins_paiement_en_echec` (virements non aboutis).
+
+---
+
+## 5. Tableau de bord
+
+`monitoring/grafana/dashboards/hrflow-signaux-dor.json` — 14 panneaux, quatre
+sections, une par signal.
+
+| Section | Contenu |
+|---|---|
+| État de service | disponibilité sur 30 jours glissants, budget d'erreur consommé, services prêts, bulletins en échec |
+| 1 · Latence | centiles 50/95/99, six routes les plus lentes |
+| 2 · Trafic | requêtes par seconde et par service, répartition par route |
+| 3 · Erreurs | taux de 5xx, réponses par classe de statut, échecs de connexion |
+| 4 · Saturation | mémoire résidente, retard de la boucle d'événements, connexions PostgreSQL |
+
+Deux panneaux méritent l'attention en soutenance :
+
+- **Disponibilité sur 30 jours** — l'engagement contractuel est de 99,5 %
+  mensuel auprès de 47 clients. Le panneau affiche l'écart à cet engagement.
+- **Budget d'erreur consommé** — 0,5 % d'indisponibilité mensuelle représente
+  3 h 39. L'incident du 14 août, à lui seul, en a consommé 85 %.
+
+Le tableau de bord et sa source de données sont **provisionnés depuis le
+dépôt** : aucune configuration manuelle dans l'interface. Une modification passe
+par une demande de fusion, comme le code.
+
+---
+
+## 6. Routage des alertes
+
+`monitoring/alertmanager.yml`.
+
+| Gravité | Canal | Délai | Répétition |
+|---|---|---|---|
+| P1 | `#hrflow-astreinte` + `#hrflow-incidents` | 10 s | toutes les 15 min |
+| P2 | `#hrflow-alertes` | 30 s | toutes les 12 h |
+| P3 | `#hrflow-alertes` | 1 h | toutes les 72 h |
+
+**Une P1 réveille quelqu'un, une P2 attend les heures ouvrées.** Confondre les
+deux apprend à l'équipe à ignorer les notifications — et l'on retombe dans la
+situation d'août 2024, en plus bruyant.
+
+**Inhibitions.** Quand PostgreSQL tombe, les cinq services se déclarent non
+prêts. Sans règle d'inhibition, l'astreinte reçoit six alertes pour un seul
+incident et doit deviner laquelle est la cause. La panne de base masque donc les
+indisponibilités de service, et une P1 masque les P2 du même service.
+
+Chaque notification porte **l'action attendue** et un bouton vers le manuel
+d'exploitation. Une alerte qui ne dit pas quoi faire finit par être ignorée.
+
+---
+
+## 7. Journalisation
 
 Chaque service émet du JSON sur une ligne :
 
@@ -131,7 +214,7 @@ par HTTP — le bloc Nginx `/logs/` a été supprimé.
 
 ---
 
-## 5. Astreinte
+## 8. Astreinte
 
 | | |
 |---|---|
@@ -151,10 +234,11 @@ de comprendre l'incident, elle a besoin de rétablir le service.
 
 ---
 
-## 6. Mise en service
+## 9. Mise en service
 
 ```bash
 docker compose -f monitoring/docker-compose.monitoring.yml up -d
+# Grafana : http://localhost:3001
 ```
 
 ### Vérification obligatoire — la panne provoquée
@@ -174,7 +258,7 @@ des règles d'alerte.
 
 ---
 
-## 7. Ce qui manque encore
+## 10. Ce qui manque encore
 
 | Sujet | Bénéfice | Condition |
 |---|---|---|

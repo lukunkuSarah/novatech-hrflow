@@ -27,7 +27,10 @@
     "audit:secrets": "gitleaks detect --no-git --redact --verbose",
     "migrate": "node db/migrate.js up",
     "migrate:down": "node db/migrate.js down",
-    "smoke": "node scripts/smoke-test.js"
+    "smoke": "node scripts/smoke-test.js",
+    "test:e2e": "npm run test:e2e --workspace=frontend",
+    "test:all": "npm test && npm run test:frontend && npm run test:e2e",
+    "rapport": "node scripts/generer-rapport.js"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

@@ -65,21 +65,30 @@ function versEuros(centimes) {
  * @param {number} [params.tauxActivite]      Quotité de travail (1 = temps plein).
  * @returns {object} bulletin, montants en euros arrondis au centime
  */
-function calculerBulletin({ salaireBrutMensuel, baremeId = 'defaut', tauxActivite = 1 }) {
+function calculerBulletin({
+  salaireBrutMensuel,
+  baremeId = 'defaut',
+  tauxActivite = 1,
+  autoriserTempsPartiel = false
+}) {
   const bareme = BAREMES[baremeId]
   if (!bareme) throw AppError.badRequest(`Barème inconnu : ${baremeId}`)
 
   if (!Number.isFinite(Number(tauxActivite)) || tauxActivite <= 0 || tauxActivite > 1) {
     throw AppError.badRequest('Quotité de travail invalide (attendu : strictement entre 0 et 1)')
   }
-  // Hors périmètre couvert : plutôt que de produire un bulletin faux, on refuse.
-  if (tauxActivite !== 1) {
+  // Le temps partiel reste éteint par défaut. Il s'active par drapeau, une
+  // entreprise à la fois, une fois le barème validé par un expert-comptable
+  // (ADR-005). Sans cette validation, un bulletin faux vaut moins qu'un
+  // bulletin non émis : le premier est un contentieux différé, le second un
+  // incident visible.
+  if (tauxActivite !== 1 && !autoriserTempsPartiel) {
     throw AppError.badRequest(
       "Le temps partiel n'est pas couvert par le barème en vigueur — bulletin non émis (QUA-02)"
     )
   }
 
-  const brutCentimes = versCentimes(salaireBrutMensuel)
+  const brutCentimes = Math.round(versCentimes(salaireBrutMensuel) * tauxActivite)
   if (brutCentimes === 0) throw AppError.badRequest('Salaire brut nul')
 
   // Tous les calculs en entiers : un centime reste un centime.
@@ -94,6 +103,7 @@ function calculerBulletin({ salaireBrutMensuel, baremeId = 'defaut', tauxActivit
     cotisationsPatronales: versEuros(patronalesCentimes),
     net: versEuros(netCentimes),
     coutEmployeur: versEuros(brutCentimes + patronalesCentimes),
+    tauxActivite,
     // Le montant à virer est exprimé en centimes : c'est l'unité attendue par
     // le prestataire de paiement, et la seule qui n'introduise pas d'arrondi.
     netCentimes

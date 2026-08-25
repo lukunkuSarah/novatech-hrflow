@@ -97,3 +97,49 @@ describe('conversions monétaires', () => {
     expect(versEuros(versCentimes(0.07))).toBe(0.07)
   })
 })
+
+describe('temps partiel sous drapeau de fonctionnalité', () => {
+  const { calculerBulletin } = require('../src/domain')
+
+  it('refuse par défaut, drapeau éteint', () => {
+    expect(() => calculerBulletin({ salaireBrutMensuel: 2000, tauxActivite: 0.8 })).toThrow(
+      /temps partiel n'est pas couvert/
+    )
+  })
+
+  it('calcule au prorata quand le drapeau est allumé', () => {
+    const b = calculerBulletin({
+      salaireBrutMensuel: 3000,
+      tauxActivite: 0.8,
+      autoriserTempsPartiel: true
+    })
+    // 300000 centimes × 0,8 = 240000 → 2 400 € de brut.
+    expect(b.brut).toBe(2400)
+    expect(b.tauxActivite).toBe(0.8)
+    expect(b.net + b.cotisationsSalariales).toBe(b.brut)
+  })
+
+  it('arrondit le prorata au centime, sans dérive', () => {
+    const b = calculerBulletin({
+      salaireBrutMensuel: 2537.83,
+      tauxActivite: 0.6,
+      autoriserTempsPartiel: true
+    })
+    // 253783 × 0,6 = 152269,8 → 152270 centimes.
+    expect(b.brut).toBe(1522.7)
+    expect(Number.isInteger(b.netCentimes)).toBe(true)
+  })
+
+  it('laisse le temps plein inchangé, drapeau allumé ou non', () => {
+    const eteint = calculerBulletin({ salaireBrutMensuel: 3000 })
+    const allume = calculerBulletin({ salaireBrutMensuel: 3000, autoriserTempsPartiel: true })
+    expect(allume.brut).toBe(eteint.brut)
+    expect(allume.net).toBe(eteint.net)
+  })
+
+  it('refuse toujours une quotité aberrante, même drapeau allumé', () => {
+    expect(() =>
+      calculerBulletin({ salaireBrutMensuel: 2000, tauxActivite: 1.5, autoriserTempsPartiel: true })
+    ).toThrow(/Quotité/)
+  })
+})

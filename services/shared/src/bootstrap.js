@@ -4,6 +4,8 @@ const { loadConfig, redact } = require('./config')
 const { createLogger } = require('./logger')
 const { installProcessGuards } = require('./errors')
 const { createPool } = require('./db')
+const { createMetrics } = require('./metriques')
+const { createFeatureFlags } = require('./drapeaux')
 
 /**
  * Démarrage normalisé d'un service.
@@ -30,7 +32,11 @@ function startService({ name, required = [], optional = {}, build, withDatabase 
 
   const pool = withDatabase ? createPool({ connectionString: config.DATABASE_URL, ssl: config.isProduction }) : null
 
-  const app = build({ config, logger, pool })
+  const metrics = createMetrics({ name: name, service: name, version: config.APP_VERSION })
+
+  const drapeaux = createFeatureFlags({ logger })
+
+  const app = build({ config, logger, pool, metrics, drapeaux })
 
   const port = Number(config.PORT)
   const server = app.listen(port, () => {

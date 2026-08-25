@@ -1,0 +1,137 @@
+# =============================================================================
+# Routage des alertes HRFlow
+#
+# Le 15 aout 2024, la plateforme est tombee a 23 h 47. Personne n'a ete
+# notifie. A 2 h 15, un client d'hotel a telephone au numero d'urgence parce
+# qu'il ne pouvait pas acceder aux plannings du lendemain.
+#
+# Ce fichier existe pour que cela ne se reproduise pas. Il repond a une seule
+# question : qui est prevenu, par quel canal, et au bout de combien de temps.
+# =============================================================================
+
+global:
+  resolve_timeout: 5m
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+templates:
+  - '/etc/alertmanager/modeles/*.tmpl'
+
+# -----------------------------------------------------------------------------
+# Arbre de routage
+#
+# Regle de conception : une alerte P1 reveille quelqu'un, une alerte P2 attend
+# les heures ouvrees. Confondre les deux, c'est apprendre a l'equipe a ignorer
+# les notifications — et on retombe dans la situation d'aout 2024, en plus
+# bruyant.
+# -----------------------------------------------------------------------------
+route:
+  receiver: equipe-defaut
+
+  # Regroupement par gravite et par service : une panne de base de donnees ne
+  # doit pas produire cinq notifications, une par service qui en depend.
+  group_by: ['gravite', 'alertname', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    - matchers: ['gravite = "P1"']
+      receiver: astreinte
+      # Une P1 part immediatement : les trente secondes de regroupement par
+      # defaut sont deja trop, sur un objectif de detection de deux minutes.
+      group_wait: 10s
+      # Repetee toutes les quinze minutes tant qu'elle n'est pas resolue : une
+      # notification unique se perd dans une nuit.
+      repeat_interval: 15m
+      continue: true
+
+    - matchers: ['gravite = "P1"']
+      receiver: journal-incidents
+
+    - matchers: ['gravite = "P2"']
+      receiver: equipe-defaut
+      repeat_interval: 12h
+
+    - matchers: ['gravite = "P3"']
+      receiver: equipe-defaut
+      group_interval: 1h
+      repeat_interval: 72h
+
+# -----------------------------------------------------------------------------
+# Inhibitions
+#
+# Quand PostgreSQL tombe, les cinq services se declarent non prets. Sans cette
+# regle, l'astreinte recoit six alertes pour un seul incident, et doit deviner
+# laquelle est la cause.
+# -----------------------------------------------------------------------------
+inhibit_rules:
+  - source_matchers: ['alertname = "BaseDeDonneesInjoignable"']
+    target_matchers: ['alertname = "ServiceIndisponible"']
+    equal: ['environnement']
+
+  - source_matchers: ['alertname = "PlateformeInaccessible"']
+    target_matchers: ['alertname = "LatenceElevee"']
+    equal: ['environnement']
+
+  # Une alerte de gravite superieure masque les alertes moindres du meme service.
+  - source_matchers: ['gravite = "P1"']
+    target_matchers: ['gravite = "P2"']
+    equal: ['service']
+
+receivers:
+  # ---------------------------------------------------------------------------
+  # Astreinte — P1 uniquement, 24 h/24
+  # ---------------------------------------------------------------------------
+  - name: astreinte
+    slack_configs:
+      - channel: '#hrflow-astreinte'
+        send_resolved: true
+        title: '{{ if eq .Status "firing" }}INCIDENT P1{{ else }}RESOLU{{ end }} — {{ .CommonAnnotations.resume }}'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.resume }}*
+          {{ .Annotations.description }}
+
+          *Action attendue :*
+          {{ .Annotations.action }}
+
+          Service : `{{ .Labels.service }}{{ .Labels.cible }}`
+          Depuis : {{ .StartsAt.Format "15:04:05" }}
+          {{ end }}
+        actions:
+          - type: button
+            text: 'Manuel d''exploitation'
+            url: 'https://github.com/lukunkuSarah/novatech-hrflow/blob/main/docs/RUNBOOK.md'
+          - type: button
+            text: 'Tableau de bord'
+            url: 'http://localhost:3001/d/hrflow-signaux-dor'
+
+  # ---------------------------------------------------------------------------
+  # Equipe — P2 et P3, heures ouvrees
+  # ---------------------------------------------------------------------------
+  - name: equipe-defaut
+    slack_configs:
+      - channel: '#hrflow-alertes'
+        send_resolved: true
+        title: '[{{ .CommonLabels.gravite }}] {{ .CommonAnnotations.resume }}'
+        text: |
+          {{ range .Alerts }}
+          {{ .Annotations.description }}
+          _Action :_ {{ .Annotations.action }}
+          {{ end }}
+
+  # ---------------------------------------------------------------------------
+  # Journal des incidents — trace ecrite de chaque P1
+  #
+  # Toute P1 doit donner lieu a un post-mortem sous 48 heures. Cette copie
+  # garantit qu'aucune n'est oubliee : c'est ce qui a manque au post-mortem du
+  # 14 aout, dont les cinq actions decidees n'ont jamais ete suivies.
+  # ---------------------------------------------------------------------------
+  - name: journal-incidents
+    slack_configs:
+      - channel: '#hrflow-incidents'
+        send_resolved: true
+        title: 'P1 — {{ .CommonAnnotations.resume }}'
+        text: |
+          Debut : {{ (index .Alerts 0).StartsAt.Format "2006-01-02 15:04:05" }}
+          Post-mortem attendu sous 48 h — modele : docs/RUNBOOK.md § 8

@@ -1,0 +1,15 @@
+# Le tableau de bord est versionne dans le depot, pas cree a la main dans
+# l'interface : une modification passe par une demande de fusion, comme le code.
+apiVersion: 1
+
+providers:
+  - name: HRFlow
+    orgId: 1
+    folder: HRFlow
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

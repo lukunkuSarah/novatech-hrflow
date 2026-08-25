@@ -1,0 +1,15 @@
+# Source de donnees provisionnee au demarrage : aucune configuration manuelle
+# dans l'interface. C'est ce qui rend le tableau de bord reproductible d'un
+# environnement a l'autre.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+      httpMethod: POST

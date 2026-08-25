@@ -19,6 +19,8 @@ module.exports = {
   ...require('./health'),
   ...require('./db'),
   ...require('./validate'),
+  ...require('./metriques'),
+  ...require('./drapeaux'),
   ...require('./bootstrap'),
   ...require('./testing')
 }

@@ -23,6 +23,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.js'],
+    // Vitest se limite à `src/`. Sans cette borne, il ramasserait aussi les
+    // scénarios de `e2e/`, qui relèvent de Playwright : les deux exécuteurs se
+    // disputeraient les mêmes fichiers et échoueraient tous les deux.
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

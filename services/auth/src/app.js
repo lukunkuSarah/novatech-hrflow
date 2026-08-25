@@ -43,8 +43,8 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex')
 }
 
-function createAuthApp({ pool, config, logger, mailer, limits = {} }) {
-  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS })
+function createAuthApp({ pool, config, logger, mailer, limits = {}, metrics }) {
+  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS, metrics })
 
   app.use(
     healthRouter({

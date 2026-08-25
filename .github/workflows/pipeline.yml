@@ -195,6 +195,30 @@ jobs:
       - name: Tests du frontend
         run: npm run test:frontend
 
+      # ---------------------------------------------------------------------
+      # Bout en bout — livrable L2
+      #
+      # Les scénarios s'exécutent sur le frontend RÉELLEMENT CONSTRUIT, dans un
+      # Chromium, avec l'API interceptée au niveau réseau selon le contrat de
+      # docs/openapi.yaml. Motif détaillé dans docs/PLAN-DE-TESTS.md § 7.
+      # ---------------------------------------------------------------------
+      - name: Installation du navigateur de test
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Parcours de bout en bout (5 scénarios)
+        run: npm run test:e2e
+
+      - name: Conservation du rapport de bout en bout
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ needs.build.outputs.version }}
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7
+
       - name: Conservation des rapports de couverture
         if: always()
         uses: actions/upload-artifact@v4
