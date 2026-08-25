@@ -1,53 +1,77 @@
 import React, { useState } from 'react'
-import axios from 'axios'
+import { api, messageErreur } from '../api/client'
+import { setSession } from '../api/session'
 
-// Token API hardcodé en fallback — à nettoyer
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api'
-
-export default function Login() {
+/**
+ * Formulaire de connexion.
+ *
+ * Corrections par rapport à la version auditée :
+ *   - SEC-18 : le jeton n'est plus écrit dans `localStorage` mais conservé en mémoire ;
+ *   - QUA-10 : suppression du lien de contournement d'authentification laissé en commentaire ;
+ *   - le message d'erreur reste volontairement identique quelle que soit la cause
+ *     (compte inconnu ou mot de passe faux), pour ne pas permettre d'énumérer les comptes ;
+ *   - la navigation passe par le routeur au lieu d'un rechargement complet de page.
+ */
+export default function Login({ onConnecte }) {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState(null)
+  const [motDePasse, setMotDePasse] = useState('')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
+  const seConnecter = async (event) => {
+    event.preventDefault()
+    setErreur(null)
+    setEnCours(true)
+
     try {
-      const { data } = await axios.post(`${API_URL}/auth/login`, { email, password })
-      // Stockage du token dans localStorage — vulnérable XSS
-      localStorage.setItem('hrflow_token', data.token)
-      localStorage.setItem('hrflow_user', JSON.stringify(data.user))
-      window.location.href = '/dashboard'
+      const { data } = await api.post('/auth/login', { email, password: motDePasse })
+      setSession({ token: data.accessToken, user: data.user })
+      if (onConnecte) onConnecte(data.user)
     } catch (err) {
-      setError('Identifiants invalides')
-      // Log complet de l'erreur — peut exposer des infos sensibles
-      console.error('Login error:', err.response?.data)
+      setErreur(messageErreur(err))
+    } finally {
+      setEnCours(false)
     }
   }
 
   return (
     <div className="login-container">
       <h1>HRFlow</h1>
-      <form onSubmit={handleLogin}>
+      <form onSubmit={seConnecter} aria-label="Formulaire de connexion">
+        <label htmlFor="email">Adresse e-mail</label>
         <input
+          id="email"
+          name="email"
           type="email"
+          autoComplete="username"
+          required
           placeholder="Email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
         />
+
+        <label htmlFor="motDePasse">Mot de passe</label>
         <input
+          id="motDePasse"
+          name="motDePasse"
           type="password"
+          autoComplete="current-password"
+          required
           placeholder="Mot de passe"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
+          value={motDePasse}
+          onChange={(e) => setMotDePasse(e.target.value)}
         />
-        {error && <p className="error">{error}</p>}
-        <button type="submit">Connexion</button>
+
+        {erreur && (
+          <p className="error" role="alert">
+            {erreur}
+          </p>
+        )}
+
+        <button type="submit" disabled={enCours}>
+          {enCours ? 'Connexion…' : 'Connexion'}
+        </button>
       </form>
-      {/* TODO: désactiver en prod — lien de debug direct dashboard */}
-      {/* <a href="/dashboard?bypass=true">Bypass auth (dev only)</a> */}
     </div>
   )
 }
-
-// Camille — ajout du "Se souvenir de moi" (jan 2022)
-// TODO: tester sur Firefox
