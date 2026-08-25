@@ -24,7 +24,10 @@ tags = ["hrflow", "jwt"]
 [[rules]]
 id = "hrflow-db-password"
 description = "Mot de passe de base de données en clair"
-regex = '''(?i)(db|database|postgres)[_-]?password\s*[=:]\s*['"]?[^\s'"]{8,}'''
+# La classe exclut $ et { : sinon la règle se déclenche sur une référence de
+# variable comme « POSTGRES_PASSWORD: ${DB_PASSWORD:?...} », qui ne contient
+# aucune valeur.
+regex = '''(?i)(db|database|postgres)[_-]?password\s*[=:]\s*['"]?[^\s'"${]{8,}'''
 tags = ["hrflow", "database"]
 
 [[rules]]
@@ -53,5 +56,9 @@ paths = [
 regexes = [
   # Secrets de test, sans valeur en dehors de la suite de tests.
   '''secret-de-test-uniquement-non-utilise-en-production''',
-  '''sk_test_'''
+  '''sk_test_''',
+  # Références de variables d'environnement : un nom, jamais une valeur.
+  '''\$\{[A-Za-z_][A-Za-z0-9_]*''',
+  # Empreintes bcrypt du jeu de démonstration : non réversibles.
+  '''\$2[aby]\$[0-9]{2}\$'''
 ]
