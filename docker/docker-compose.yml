@@ -190,7 +190,9 @@ services:
     image: ${REGISTRY:-hrflow}/frontend:${VERSION:-dev}
     restart: unless-stopped
     ports:
-      - '127.0.0.1:8080:8080'
+      # Port configurable : sous Windows, la plage dynamique d'Hyper-V reserve
+      # frequemment 8080 et le lien echoue avec une erreur d'autorisation.
+      - '127.0.0.1:${FRONTEND_PORT:-8080}:8080'
     networks: [interne]
     security_opt:
       - no-new-privileges:true
