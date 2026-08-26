@@ -192,6 +192,28 @@ Signalement d'une vulnérabilité : `securite@novatech.io`.
 
 ---
 
+## Démonstrations
+
+Deux scripts exécutent des vérifications sur la pile réellement déployée, et
+sont rejouables à volonté.
+
+```bash
+bash scripts/demo-soutenance.sh
+```
+
+Dix contrôles métier et de sécurité : cloisonnement multi-locataire, fraude aux
+congés fermée, routes de l'incident disparues, idempotence des virements.
+
+```bash
+bash scripts/demo-zero-downtime.sh
+```
+
+Mesure le confinement du rayon d'action — **0 requête perdue sur `conges`
+pendant le remplacement complet de `paie`** — puis chronomètre le retour
+arrière : **183 secondes**, contre un objectif de 600.
+
+---
+
 ## Supervision
 
 ```bash
@@ -259,6 +281,7 @@ vertes et qu'une revue a été approuvée.
 | [docs/openapi.yaml](docs/openapi.yaml) | Contrats d'interface des 16 routes |
 | [docs/PLAN-DE-TESTS.md](docs/PLAN-DE-TESTS.md) | Stratégie de test, matrice de couverture, traçabilité constat → test |
 | [docs/rapport/RAPPORT-HRFLOW.pdf](docs/rapport/RAPPORT-HRFLOW.pdf) | Rapport de remédiation, résumé exécutif en anglais inclus |
+| [infra/terraform/README.md](infra/terraform/README.md) | Infrastructure décrite en code — écrite, non appliquée |
 | [docs/soutenance/index.html](docs/soutenance/index.html) | Support de soutenance |
 | [docs/incident-aout-2024.md](docs/incident-aout-2024.md) | Post-mortem de l'incident P1 |
 | [docs/audit-partech-septembre-2024.md](docs/audit-partech-septembre-2024.md) | Audit externe |

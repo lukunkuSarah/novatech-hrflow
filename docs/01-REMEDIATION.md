@@ -159,6 +159,83 @@ constat est consigné en ADR-008.
 
 ---
 
+## Mesures relevées sur la pile réellement déployée
+
+Exécutées le jour de la soutenance, sur les sept conteneurs en fonctionnement,
+avec le jeu de démonstration chargé. Les chiffres sont mesurés, pas estimés.
+
+### Démonstration métier — `scripts/demo-soutenance.sh`
+
+Dix contrôles, tous verts, rejouables à volonté :
+
+| Contrôle | Résultat |
+|---|---|
+| Connexion et jeton de 15 minutes | 200 |
+| SEC-13 — message indifférencié compte inconnu / mot de passe erroné | identique |
+| Solde consultable par son titulaire | 200 — disponible 12, théorique 15 |
+| SEC-08 — solde d'un collègue | 403 |
+| SEC-08 — salarié d'un autre client | 404, et non 403 : répondre 403 confirmerait son existence |
+| QUA-05 — dates inversées | 400 |
+| QUA-05 — chevauchement | 409 |
+| SEC-04 — `POST /paie/migrate` | 404 |
+| SEC-05 — `GET /conges/debug/all` | 404 |
+| QUA-03 — second appel de paie identique | 200, `idempotent: true` |
+
+### Déploiement — `scripts/demo-zero-downtime.sh`
+
+| Mesure | Résultat | Objectif |
+|---|---|---|
+| Requêtes perdues sur `conges` pendant le remplacement de `paie` | **0 sur 30** | — |
+| Bascule des cinq services, un par un | 199 s | — |
+| **Retour arrière complet, version restaurée vérifiée** | **183 s** | < 600 s |
+
+**Ce que la mesure démontre** : le rayon d'action d'un déploiement se limite au
+service déployé. C'est la différence concrète avec `pm2 restart all`, qui
+coupait tout en même temps.
+
+**Ce qu'elle ne démontre pas, et nous le disons** : le zero-downtime complet
+d'un service donné. Avec une seule instance, son remplacement le rend
+indisponible quelques secondes, quel que soit l'orchestrateur. Il en faut au
+moins deux derrière un répartiteur — c'est ce que décrit `infra/terraform`, et
+ce qu'impose la validation `replicas >= 2` de `variables.tf`.
+
+### Tests de fumée sur l'environnement déployé
+
+`npm run smoke` — dix vérifications, dont sept portant sur des vulnérabilités
+fermées, exécutées contre la pile réelle et non contre des doublures.
+
+---
+
+## Infrastructure décrite en code
+
+`infra/terraform/` — 1 331 lignes, neuf fichiers, **écrites et relues, non
+appliquées** faute d'accès au bac à sable AWS. Le dire vaut mieux que laisser
+croire à un déploiement qui n'a pas eu lieu.
+
+| Fichier | Contenu |
+|---|---|
+| `reseau.tf` | VPC, trois niveaux de sous-réseaux, groupes de sécurité sans règle publique hors répartiteur |
+| `donnees.tf` | RDS multi-AZ, Secrets Manager, S3 chiffré avec purge RGPD |
+| `calcul.tf` | ECS Fargate, rôles séparés exécution/tâche, sondes réelles |
+| `repartiteur.tf` | ALB, groupes cibles bleu et vert, redirection HTTPS |
+| `deploiement.tf` | CodeDeploy — bascule progressive 10 %, retour arrière automatique |
+| `supervision.tf` | Six alarmes CloudWatch, dont deux pilotent le retour arrière |
+
+**Ce que le code garantit par construction** : aucun secret en clair, bases
+inaccessibles depuis l'extérieur, chiffrement au repos et en transit,
+sauvegardes avec restauration à un instant donné, suppression protégée en
+production.
+
+**Ce qu'il ne garantit pas tant qu'il n'est pas appliqué** : les temps de
+bascule réels, le coût effectif, le comportement des sondes sous charge.
+
+Estimation de coût : environ 250 €/mois. Le bac à sable évoqué au cahier des
+charges est limité à 50 € : cette architecture n'y tient pas. Il faudrait passer
+en zone unique et retirer le multi-AZ — ce serait un environnement de
+démonstration, pas la cible.
+
+---
+
 ## Ce qui reste, et pourquoi
 
 | Sujet | Nature | Décideur |
