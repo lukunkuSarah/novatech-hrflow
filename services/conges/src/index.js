@@ -7,5 +7,5 @@ startService({
   name: 'conges',
   required: ['JWT_SECRET'],
   optional: { PORT: '3003' },
-  build: ({ config, logger, pool }) => createCongesApp({ pool, config, logger })
+  build: ({ config, logger, pool, metrics }) => createCongesApp({ pool, config, logger, metrics })
 })

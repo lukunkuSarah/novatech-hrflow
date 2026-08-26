@@ -23,7 +23,7 @@ startService({
     MAIL_FROM: 'no-reply@hrflow.novatech.io',
     RESET_URL_BASE: 'https://hrflow.novatech.io/reset'
   },
-  build({ config, logger, pool }) {
+  build({ config, logger, pool, metrics }) {
     const mailer = config.SENDGRID_API_KEY
       ? createSendgridMailer({
           apiKey: config.SENDGRID_API_KEY,
@@ -32,6 +32,6 @@ startService({
         })
       : createConsoleMailer(logger)
 
-    return createAuthApp({ pool, config, logger, mailer })
+    return createAuthApp({ pool, config, logger, mailer, metrics })
   }
 })

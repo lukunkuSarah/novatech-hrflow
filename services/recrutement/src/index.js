@@ -11,5 +11,5 @@ startService({
     // Volume persistant, hors arborescence servie par le serveur web (SEC-07).
     UPLOAD_DIR: '/var/lib/hrflow/cv'
   },
-  build: ({ config, logger, pool }) => createRecrutementApp({ pool, config, logger })
+  build: ({ config, logger, pool, metrics }) => createRecrutementApp({ pool, config, logger, metrics })
 })

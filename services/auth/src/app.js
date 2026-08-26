@@ -101,6 +101,7 @@ function createAuthApp({ pool, config, logger, mailer, limits = {}, metrics }) {
 
       if (user && user.locked_until && new Date(user.locked_until) > now) {
         req.log.warn('tentative sur compte verrouillé', { userId: user.id })
+        if (metrics) metrics.connexionsEchouees.inc({ motif: 'compte-verrouille' })
         throw AppError.tooManyRequests('Compte temporairement verrouillé')
       }
 
@@ -118,6 +119,9 @@ function createAuthApp({ pool, config, logger, mailer, limits = {}, metrics }) {
             lockedUntil,
             user.id
           ])
+        }
+        if (metrics) {
+          metrics.connexionsEchouees.inc({ motif: user ? 'mot-de-passe-invalide' : 'compte-inconnu' })
         }
         // Message identique dans les deux cas : pas d'énumération de comptes.
         throw AppError.unauthorized('Identifiants invalides')
