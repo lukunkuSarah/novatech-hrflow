@@ -77,8 +77,10 @@ function corsPolicy(allowedOrigins) {
  * @param {string} [options.allowedOrigins] Liste d'origines séparées par des virgules.
  * @param {string} [options.bodyLimit]      Taille maximale du corps JSON.
  * @param {object} [options.metrics]        Registre issu de createMetrics().
+ * @param {boolean} [options.parseJson]     Analyser le corps JSON. À désactiver
+ *                                          sur un service qui relaie les requêtes.
  */
-function createApp({ logger, allowedOrigins, bodyLimit = '100kb', metrics } = {}) {
+function createApp({ logger, allowedOrigins, bodyLimit = '100kb', metrics, parseJson = true } = {}) {
   const app = express()
 
   app.disable('x-powered-by')
@@ -109,7 +111,10 @@ function createApp({ logger, allowedOrigins, bodyLimit = '100kb', metrics } = {}
     app.get('/metrics', metrics.exposer)
   }
   app.use(corsPolicy(allowedOrigins))
-  app.use(express.json({ limit: bodyLimit }))
+  // La passerelle ne lit jamais le corps des requêtes : elle les relaie. L'analyser
+  // ici le consommerait, et le service en aval attendrait indéfiniment des données
+  // déjà lues — la connexion meurt sans réponse (curl : « empty reply from server »).
+  if (parseJson) app.use(express.json({ limit: bodyLimit }))
 
   return app
 }

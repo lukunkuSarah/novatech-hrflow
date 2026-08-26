@@ -30,7 +30,14 @@ function estPublique(req) {
 }
 
 function createGatewayApp({ config, logger, fetchImpl = globalThis.fetch, metrics }) {
-  const app = createApp({ logger, allowedOrigins: config.ALLOWED_ORIGINS, metrics })
+  // parseJson: false — la passerelle relaie, elle ne lit pas. Analyser le corps
+  // le consommerait et le service en aval attendrait des données déjà lues.
+  const app = createApp({
+    logger,
+    allowedOrigins: config.ALLOWED_ORIGINS,
+    metrics,
+    parseJson: false
+  })
 
   const cibles = {
     auth: config.AUTH_URL,
