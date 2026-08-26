@@ -74,9 +74,19 @@ describe('propagation vers le service en aval', () => {
   let port
 
   beforeAll(async () => {
+    // Le serveur de test lit le corps avant de répondre. C'est indispensable :
+    // un serveur qui répond immédiatement masque le défaut où la passerelle
+    // consomme le corps sans le retransmettre — la requête réelle reste alors
+    // en attente de données déjà lues, et meurt sans réponse.
     serveur = http.createServer((req, res) => {
-      res.setHeader('Content-Type', 'application/json')
-      res.end(JSON.stringify({ url: req.url, headers: req.headers }))
+      let corps = ''
+      req.on('data', (morceau) => {
+        corps += morceau
+      })
+      req.on('end', () => {
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ url: req.url, headers: req.headers, corps }))
+      })
     })
     await new Promise((resolve) => serveur.listen(0, '127.0.0.1', resolve))
     port = serveur.address().port
@@ -116,6 +126,22 @@ describe('propagation vers le service en aval', () => {
 
     expect(reponse.status).toBe(200)
     expect(reponse.body.url).toBe('/conges')
+  })
+
+  it('retransmet le corps de la requête au service en aval', async () => {
+    // Défaut découvert en exécution réelle : la passerelle analysait le corps
+    // JSON avant de relayer. Le service en aval attendait alors des données
+    // déjà consommées, et la connexion mourait sans réponse (curl : exit 52).
+    const app = construire({ config: { AUTH_URL: `http://127.0.0.1:${port}` } })
+    const reponse = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'salarie@novatech.io', password: 'MotDePasseSolide2024' })
+
+    expect(reponse.status).toBe(200)
+    expect(JSON.parse(reponse.body.corps)).toEqual({
+      email: 'salarie@novatech.io',
+      password: 'MotDePasseSolide2024'
+    })
   })
 
   it("n'ajoute pas d'en-tête d'identité sur une route publique", async () => {

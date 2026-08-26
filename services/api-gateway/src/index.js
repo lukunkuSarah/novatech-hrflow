@@ -17,5 +17,5 @@ startService({
     RATE_LIMIT_PAR_MINUTE: '120',
     PROXY_TIMEOUT_MS: '10000'
   },
-  build: ({ config, logger }) => createGatewayApp({ config, logger })
+  build: ({ config, logger, metrics }) => createGatewayApp({ config, logger, metrics })
 })

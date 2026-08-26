@@ -1,44 +1,38 @@
 # =============================================================================
 # Image du frontend HRFlow
 #
-# Le frontend audité n'était pas constructible : ni `public/index.html`, ni
-# point d'entrée `src/index.js` (QUA-09). L'étape « Build frontend » du pipeline
-# ne pouvait donc pas réussir.
+# Le frontend audite n'etait pas constructible : ni public/index.html, ni point
+# d'entree src/index.js (QUA-09). L'etape « build » du pipeline ne pouvait donc
+# pas reussir.
+#
+# CETTE IMAGE CONSOMME UN ARTEFACT DEJA CONSTRUIT.
+#
+# L'etape 1 du pipeline execute deja `npm run build` et conserve `frontend/dist`
+# en artefact. Reconstruire dans l'image reviendrait a construire deux fois le
+# meme code, avec un risque reel de divergence entre ce qui est teste et ce qui
+# est servi -- exactement le defaut CIC-06 releve dans l'audit, ou le serveur
+# reconstruisait de son cote apres un `git pull`.
+#
+# Cela evite par ailleurs un obstacle technique : Vite 8 s'appuie sur Rolldown,
+# dont le binaire natif n'est pas resolu par `npm ci` dans un conteneur Linux
+# lorsque le fichier de verrouillage a ete genere sous Windows (bug npm/cli#4828).
+#
+# USAGE :
+#   npm run build                              # produit frontend/dist
+#   docker compose -f docker/docker-compose.yml build frontend
 # =============================================================================
 
-ARG NODE_VERSION=20.17-alpine
-
-FROM node:${NODE_VERSION} AS build
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-COPY services/shared/package.json ./services/shared/
-COPY services/api-gateway/package.json ./services/api-gateway/
-COPY services/auth/package.json ./services/auth/
-COPY services/paie/package.json ./services/paie/
-COPY services/conges/package.json ./services/conges/
-COPY services/recrutement/package.json ./services/recrutement/
-COPY frontend/package.json ./frontend/
-
-RUN npm ci --ignore-scripts
-
-COPY frontend ./frontend
-
-ARG VITE_API_URL=/api
-ENV VITE_API_URL=${VITE_API_URL}
-
-RUN npm run build --workspace=frontend
-
-# -----------------------------------------------------------------------------
-# Service des fichiers statiques
-# -----------------------------------------------------------------------------
 FROM nginx:1.27-alpine AS runtime
 
-COPY --from=build /app/frontend/dist /usr/share/nginx/html
+# Garde-fou : sans artefact, l'erreur doit etre lisible immediatement, pas se
+# manifester par une page blanche apres deploiement.
+COPY docker/verifier-artefact.sh /tmp/verifier-artefact.sh
+COPY frontend/dist /usr/share/nginx/html
+RUN sh /tmp/verifier-artefact.sh && rm /tmp/verifier-artefact.sh
+
 COPY docker/nginx-frontend.conf /etc/nginx/conf.d/default.conf
 
-# Nginx écoute sur 8080 pour tourner sans privilèges.
+# Nginx ecoute sur 8080 pour tourner sans privileges.
 EXPOSE 8080
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \

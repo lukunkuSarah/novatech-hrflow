@@ -39,6 +39,30 @@ function createPaieApp({ pool, config, logger, payouts, metrics, drapeaux }) {
     })
   )
 
+  // La jauge est relue en base à chaque collecte, et non incrémentée à la volée.
+  // Un compteur en mémoire repartirait de zéro au redémarrage alors que les
+  // bulletins impayés, eux, sont toujours là : l'alerte VirementsEnEchec
+  // cesserait de se déclencher sans que rien ne le signale — précisément le
+  // silence que la correction de QUA-03 visait à supprimer. La requête s'appuie
+  // sur l'index partiel idx_bulletins_a_rejouer.
+  if (metrics && pool) {
+    metrics.bulletinsEnEchec.collect = async function collecterBulletinsEnEchec() {
+      try {
+        const { rows } = await pool.query(
+          `SELECT COUNT(*)::int AS n
+             FROM bulletins_paie
+            WHERE statut IN ('paiement_a_rejouer', 'paiement_en_echec')`
+        )
+        this.set(rows[0].n)
+      } catch (err) {
+        // Une base injoignable est déjà couverte par BaseDeDonneesInjoignable :
+        // cette collecte ne doit pas faire échouer l'exposition des autres
+        // métriques, sous peine de rendre la panne moins lisible, pas plus.
+        logger.warn('jauge des bulletins en échec non rafraîchie', { erreur: err.message })
+      }
+    }
+  }
+
   const auth = requireAuth({ secret: config.JWT_SECRET })
 
   // ---------------------------------------------------------------------------
